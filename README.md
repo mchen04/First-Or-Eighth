@@ -7,7 +7,7 @@ First or Eighth is a responsive game hub for the current friend-group games:
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/>
 - Pancake: incoming
 
-The visual direction follows the selected Claude Design prototype, `First or Eighth - Live.html`: a neon dark arcade-library with a mobile drawer, searchable cards, game detail views, creator credits, and a short about page.
+The visual direction follows the selected Claude Design prototype, `First or Eighth - Live.html`: a neon dark leaderboard/library with a mobile drawer, searchable cards, game detail views, creator credits, stats, and a short about page.
 
 The interface is intentionally viewport-fit: each route is designed to fit inside the current desktop or phone viewport without document scrolling. On very small and landscape screens, secondary copy is clamped and the layouts compress into denser cards so the whole screen remains visible.
 
@@ -43,4 +43,4 @@ The implementation was based on the fetched Claude Design handoff bundle:
 - `first-or-eighth/chats/chat1.md`
 - `first-or-eighth/project/First or Eighth - Live.html`
 
-The bundle said the selected direction was design #1: neon dark arcade-library, made responsive for mobile.
+The bundle said the selected direction was design #1: neon dark / leaderboard, made responsive for mobile.

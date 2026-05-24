@@ -34,6 +34,7 @@ const games = [
     tagline: "Tap in sync, miss clean, talk trash after.",
     description:
       "A quick-hit rhythm and reaction game built for the kind of group session where every round starts as a joke and ends with a rematch.",
+    stats: { mode: "Browser", players: "Group", pace: "Fast", state: "Live" },
     screenshot: "assets/thumb-ding.png"
   },
   {
@@ -50,6 +51,7 @@ const games = [
     tagline: "Make the right bonds before the board turns on you.",
     description:
       "A chemistry-flavored puzzle game with a clean board-game rhythm: read the state, commit to the bond, and hope the next move still works.",
+    stats: { mode: "Browser", players: "Solo", pace: "Thinky", state: "Live" },
     screenshot: "assets/thumb-valence.png"
   },
   {
@@ -66,6 +68,7 @@ const games = [
     tagline: "Say enough, but not too much.",
     description:
       "A party-word game about restraint under pressure. The constraint is simple, which is exactly why the room gets loud.",
+    stats: { mode: "Browser", players: "Teams", pace: "Chaotic", state: "Live" },
     screenshot: "assets/thumb-25.png"
   },
   {
@@ -82,7 +85,8 @@ const games = [
     tagline: "The next cabinet slot is warming up.",
     description:
       "Pancake is the incoming game in the group rotation. It gets a visible slot now so the hub feels complete when the link goes live.",
-    screenshot: "assets/thumb-pancake-wip.svg"
+    stats: { mode: "Soon", players: "TBD", pace: "TBD", state: "Incoming" },
+    screenshot: "assets/thumb-pancake.svg"
   }
 ];
 
@@ -148,7 +152,7 @@ function readRoute() {
   if (!hash) return { name: "home" };
   const [name, id] = hash.split("/");
   if (name === "game" && games.some((game) => game.id === id)) return { name: "game", id };
-  if (["creators", "about"].includes(name)) return { name };
+  if (["creators", "stats", "about"].includes(name)) return { name };
   return { name: "home" };
 }
 
@@ -165,6 +169,7 @@ function topbar() {
   const links = [
     ["home", "Library", "#/"],
     ["creators", "Creators", "#/creators"],
+    ["stats", "Stats", "#/stats"],
     ["about", "About", "#/about"]
   ];
 
@@ -209,6 +214,7 @@ function navLink(id, label, href, routeName) {
 function mainView() {
   if (state.route.name === "game") return gameDetail(games.find((game) => game.id === state.route.id));
   if (state.route.name === "creators") return creatorsPage();
+  if (state.route.name === "stats") return statsPage();
   if (state.route.name === "about") return aboutPage();
   return libraryPage();
 }
@@ -344,6 +350,14 @@ function gameDetail(game) {
             <button class="button button-secondary" data-action="copy-link">Copy page link</button>
           </div>
         </div>
+        <section class="stat-grid detail-stats">
+          ${Object.entries(game.stats).map(([key, value]) => `
+            <div class="stat-card">
+              <span>${key}</span>
+              <strong>${value}</strong>
+            </div>
+          `).join("")}
+        </section>
         <section class="credits-panel">
           <div>
             <p class="eyebrow">Credits</p>
@@ -380,6 +394,10 @@ function creatorsPage() {
                 </div>
               </div>
               <p>${creator.bio}</p>
+              <div class="creator-stats">
+                <span><strong>${created.length}</strong> created</span>
+                <span><strong>${edited.length}</strong> edited</span>
+              </div>
               <div class="creator-games">
                 ${[...created, ...edited.filter((game) => !created.includes(game))].map((game) => `
                   <button data-action="open-game" data-game="${game.id}">
@@ -391,6 +409,35 @@ function creatorsPage() {
             </article>
           `;
         }).join("")}
+      </section>
+    </main>
+  `;
+}
+
+function statsPage() {
+  const live = games.filter((game) => game.status === "Live").length;
+  const incoming = games.length - live;
+  return `
+    <main class="page stats-page">
+      <section class="page-intro">
+        <p class="eyebrow">Lobby stats</p>
+        <h1>Small catalog, fast routes.</h1>
+      </section>
+      <section class="stat-grid wide">
+        <div class="stat-card"><span>Games</span><strong>${games.length}</strong></div>
+        <div class="stat-card"><span>Live</span><strong>${live}</strong></div>
+        <div class="stat-card"><span>Incoming</span><strong>${incoming}</strong></div>
+        <div class="stat-card"><span>Editors</span><strong>1</strong></div>
+      </section>
+      <section class="leaderboard">
+        ${games.map((game) => `
+          <button class="leader-row" data-action="open-game" data-game="${game.id}">
+            <span>${String(game.rank).padStart(2, "0")}</span>
+            <strong>${game.name}</strong>
+            <em>${creators[game.creator].name}</em>
+            <small>${game.status}</small>
+          </button>
+        `).join("")}
       </section>
     </main>
   `;
@@ -416,13 +463,12 @@ function aboutPage() {
 }
 
 function thumb(game, big = false) {
-  const isWip = game.status === "Incoming";
   return `
-    <div class="thumb ${big ? "big" : ""} ${isWip ? "is-wip" : ""}" style="--accent:${game.accent}; --secondary:${game.secondary}">
+    <div class="thumb ${big ? "big" : ""}" style="--accent:${game.accent}; --secondary:${game.secondary}">
       <img src="${game.screenshot}" alt="" loading="lazy" />
       <div class="thumb-overlay">
-        <span>${isWip ? "Coming soon" : game.genre}</span>
-        <strong>${isWip ? "Work in progress" : game.name}</strong>
+        <span>${game.genre}</span>
+        <strong>${game.name.split(" ").map((word) => word[0]).join("").slice(0, 3)}</strong>
       </div>
     </div>
   `;
