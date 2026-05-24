@@ -25,6 +25,7 @@ const games = [
     name: "Valence",
     status: "Live",
     url: "https://valence1.vercel.app/",
+    sourceUrl: "https://github.com/jormyy/valence",
     creator: "jeremy",
     editors: ["michael"],
     genre: "Puzzle",
@@ -35,10 +36,26 @@ const games = [
       "A chemistry-flavored puzzle game with a clean board-game rhythm: read the board, commit to the bond, and keep the next move alive."
   },
   {
+    id: "ding",
+    name: "Ding",
+    status: "Live",
+    url: "https://ding-game.vercel.app/",
+    sourceUrl: "https://github.com/jormyy/ding",
+    creator: "jeremy",
+    editors: ["michael"],
+    genre: "Reflex",
+    year: "2024",
+    accent: "#ff3d7f",
+    tagline: "Tap fast, miss clean, run it back.",
+    description:
+      "A quick-hit reaction game built for fast rounds, loud misses, and instant rematches."
+  },
+  {
     id: "twenty-five",
     name: "25 Words or Less",
     status: "Live",
     url: "https://25-words-or-less.vercel.app/",
+    sourceUrl: "https://github.com/matthewh8/25-words-or-less",
     creator: "matthew",
     editors: ["michael"],
     genre: "Party",
@@ -53,6 +70,7 @@ const games = [
     name: "Pancake",
     status: "WIP",
     url: "",
+    sourceUrl: "https://github.com/jormyy/pancake",
     creator: "jeremy",
     editors: ["michael"],
     genre: "Arcade",
@@ -68,7 +86,7 @@ const state = {
   route: readRoute(),
   query: "",
   genre: "All",
-  sort: "newest",
+  sort: "az",
   navOpen: false
 };
 
@@ -212,8 +230,8 @@ function libraryPage() {
         <label class="sort-box">
           <span>Sort</span>
           <select data-sort>
-            ${option("newest", "Newest")}
             ${option("az", "A to Z")}
+            ${option("newest", "Newest")}
             ${option("creator", "Builder")}
             ${option("status", "Live first")}
           </select>
@@ -240,15 +258,19 @@ function filteredGames() {
   let list = games.filter((game) => {
     const creator = creators[game.creator].name;
     const editorNames = game.editors.map((id) => creators[id].name).join(" ");
-    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames} ${game.status}`.toLowerCase();
+    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames} ${game.status} ${game.url} ${game.sourceUrl}`.toLowerCase();
     return (state.genre === "All" || game.genre === state.genre) && (!query || haystack.includes(query));
   });
 
-  if (state.sort === "newest") list = [...list].sort((a, b) => b.year.localeCompare(a.year) || a.name.localeCompare(b.name));
-  if (state.sort === "az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  if (state.sort === "newest") list = [...list].sort((a, b) => b.year.localeCompare(a.year) || byGameName(a, b));
+  if (state.sort === "az") list = [...list].sort(byGameName);
   if (state.sort === "creator") list = [...list].sort((a, b) => creators[a.creator].name.localeCompare(creators[b.creator].name) || a.name.localeCompare(b.name));
-  if (state.sort === "status") list = [...list].sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || a.name.localeCompare(b.name));
+  if (state.sort === "status") list = [...list].sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b));
   return list;
+}
+
+function byGameName(a, b) {
+  return a.name.localeCompare(b.name, undefined, { numeric: true });
 }
 
 function option(value, label) {
@@ -272,13 +294,17 @@ function gameCard(game) {
           ${personPill(game.creator, game.editors.length)}
           <span>${escapeHtml(game.genre)}</span>
         </div>
+        <div class="card-actions">
+          ${cardPlayLink(game)}
+          <a class="card-link" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener" aria-label="Open ${escapeAttr(game.name)} GitHub repository">GitHub</a>
+        </div>
       </div>
     </article>
   `;
 }
 
 function gameDetail(game) {
-  const related = games.filter((candidate) => candidate.id !== game.id);
+  const related = games.filter((candidate) => candidate.id !== game.id).sort(byGameName);
   const isWip = game.status === "WIP";
 
   return `
@@ -295,7 +321,8 @@ function gameDetail(game) {
           <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
           <div class="detail-actions">
             ${playButton(game, isWip ? "Not ready" : `Play ${game.name}`)}
-            ${isWip ? `<button class="button button-secondary" disabled>Follow build</button>` : `<button class="button button-secondary" data-action="copy-link">Copy page link</button>`}
+            <a class="button button-secondary" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener">GitHub</a>
+            <button class="button button-secondary" data-action="copy-link">Copy page link</button>
           </div>
           <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
             <div class="kv"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
@@ -309,6 +336,14 @@ function gameDetail(game) {
         <h2>About</h2>
         <p>${escapeHtml(game.description)}</p>
         ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${creators[game.creator].name} on Discord.</p>` : ""}
+      </section>
+
+      <section class="detail-section">
+        <h2>Links</h2>
+        <div class="link-list">
+          ${game.url ? `<a href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener"><strong>Play</strong><span>${escapeHtml(game.url)}</span></a>` : `<span><strong>Play</strong><span>Not live yet</span></span>`}
+          <a href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener"><strong>GitHub</strong><span>${escapeHtml(game.sourceUrl)}</span></a>
+        </div>
       </section>
 
       <section class="detail-section">
@@ -342,7 +377,7 @@ function creatorsPage() {
         ${Object.entries(creators).map(([id, creator]) => {
           const created = games.filter((game) => game.creator === id);
           const edited = games.filter((game) => game.editors.includes(id));
-          const listed = [...created, ...edited.filter((game) => !created.includes(game))];
+          const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
 
           return `
             <article class="creator-card">
@@ -409,7 +444,12 @@ function thumb(game, big = false) {
 
 function playButton(game, label) {
   if (!game.url) return `<button class="button is-disabled" disabled>${label}</button>`;
-  return `<a class="button" href="${game.url}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+  return `<a class="button" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+}
+
+function cardPlayLink(game) {
+  if (!game.url) return `<span class="card-link is-disabled">Not live</span>`;
+  return `<a class="card-link is-primary" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
 }
 
 function personPill(id, editorCount = 0) {
