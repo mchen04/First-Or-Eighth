@@ -2,41 +2,24 @@ const creators = {
   michael: {
     name: "Michael",
     handle: "@michael",
-    color: "#ff4d8d",
-    bio: "Editor across the whole cabinet."
+    color: "#ff3d7f",
+    bio: "Keeps the hub edited, current, and easy to route through."
   },
   jeremy: {
     name: "Jeremy",
     handle: "@jeremy",
-    color: "#43dfd1",
-    bio: "Creator of Ding, Valence, and Pancake."
+    color: "#54d2d2",
+    bio: "Builds fast, weird game ideas for the group rotation."
   },
   matthew: {
     name: "Matthew",
     handle: "@matthew",
-    color: "#ffca3a",
-    bio: "Creator of 25 Words or Less."
+    color: "#ffb627",
+    bio: "Builds and tunes party-game ideas for the friend group."
   }
 };
 
 const games = [
-  {
-    id: "ding",
-    name: "Ding",
-    status: "Live",
-    url: "https://ding-game.vercel.app/",
-    creator: "jeremy",
-    editors: ["michael"],
-    genre: "Reflex",
-    rank: 1,
-    accent: "#ff4d8d",
-    secondary: "#43dfd1",
-    tagline: "Tap in sync, miss clean, talk trash after.",
-    description:
-      "A quick-hit rhythm and reaction game built for the kind of group session where every round starts as a joke and ends with a rematch.",
-    stats: { mode: "Browser", players: "Group", pace: "Fast", state: "Live" },
-    screenshot: "assets/thumb-ding.svg"
-  },
   {
     id: "valence",
     name: "Valence",
@@ -45,14 +28,11 @@ const games = [
     creator: "jeremy",
     editors: ["michael"],
     genre: "Puzzle",
-    rank: 2,
-    accent: "#43dfd1",
-    secondary: "#8b5cf6",
-    tagline: "Make the right bonds before the board turns on you.",
+    year: "2024",
+    accent: "#54d2d2",
+    tagline: "Bond fast or break.",
     description:
-      "A chemistry-flavored puzzle game with a clean board-game rhythm: read the state, commit to the bond, and hope the next move still works.",
-    stats: { mode: "Browser", players: "Solo", pace: "Thinky", state: "Live" },
-    screenshot: "assets/thumb-valence.svg"
+      "A chemistry-flavored puzzle game with a clean board-game rhythm: read the board, commit to the bond, and keep the next move alive."
   },
   {
     id: "twenty-five",
@@ -62,31 +42,25 @@ const games = [
     creator: "matthew",
     editors: ["michael"],
     genre: "Party",
-    rank: 3,
-    accent: "#ffca3a",
-    secondary: "#ff4d8d",
+    year: "2024",
+    accent: "#9b5de5",
     tagline: "Say enough, but not too much.",
     description:
-      "A party-word game about restraint under pressure. The constraint is simple, which is exactly why the room gets loud.",
-    stats: { mode: "Browser", players: "Teams", pace: "Chaotic", state: "Live" },
-    screenshot: "assets/thumb-25.svg"
+      "A party-word game about restraint under pressure. The constraint is simple, which is exactly why the room gets loud."
   },
   {
     id: "pancake",
     name: "Pancake",
-    status: "Incoming",
+    status: "WIP",
     url: "",
     creator: "jeremy",
     editors: ["michael"],
     genre: "Arcade",
-    rank: 4,
-    accent: "#7cff6b",
-    secondary: "#ff8a3d",
-    tagline: "The next cabinet slot is warming up.",
+    year: "2026",
+    accent: "#ffb627",
+    tagline: "Stack 'em while they're hot.",
     description:
-      "Pancake is the incoming game in the group rotation. It gets a visible slot now so the hub feels complete when the link goes live.",
-    stats: { mode: "Soon", players: "TBD", pace: "TBD", state: "Incoming" },
-    screenshot: "assets/thumb-pancake.svg"
+      "Pancake is still being built. It gets a visible slot now so the hub already works when the game is ready to join the rotation."
   }
 ];
 
@@ -94,7 +68,7 @@ const state = {
   route: readRoute(),
   query: "",
   genre: "All",
-  sort: "rank",
+  sort: "newest",
   navOpen: false
 };
 
@@ -108,12 +82,6 @@ window.addEventListener("hashchange", () => {
 });
 
 document.addEventListener("click", (event) => {
-  const navLink = event.target.closest("[data-nav-link]");
-  if (navLink && state.navOpen) {
-    state.navOpen = false;
-    render();
-  }
-
   const action = event.target.closest("[data-action]");
   if (!action) return;
 
@@ -126,6 +94,7 @@ document.addEventListener("click", (event) => {
     copyCurrentLink(action);
     return;
   }
+
   render();
 });
 
@@ -133,9 +102,7 @@ document.addEventListener("input", (event) => {
   if (event.target.matches("[data-search]")) {
     state.query = event.target.value;
     render();
-    const input = document.querySelector("[data-search]");
-    input.focus();
-    input.setSelectionRange(state.query.length, state.query.length);
+    restoreSearchFocus();
     return;
   }
 
@@ -145,6 +112,12 @@ document.addEventListener("input", (event) => {
   }
 });
 
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !state.navOpen) return;
+  state.navOpen = false;
+  render();
+});
+
 render();
 
 function readRoute() {
@@ -152,7 +125,7 @@ function readRoute() {
   if (!hash) return { name: "home" };
   const [name, id] = hash.split("/");
   if (name === "game" && games.some((game) => game.id === id)) return { name: "game", id };
-  if (["creators", "stats", "about"].includes(name)) return { name };
+  if (["creators", "about"].includes(name)) return { name };
   return { name: "home" };
 }
 
@@ -165,25 +138,23 @@ function render() {
 }
 
 function topbar() {
-  const routeName = state.route.name;
   const links = [
-    ["home", "Library", "#/"],
-    ["creators", "Creators", "#/creators"],
-    ["stats", "Stats", "#/stats"],
+    ["home", "Games", "#/"],
+    ["creators", "Builders", "#/creators"],
     ["about", "About", "#/about"]
   ];
 
   return `
     <header class="topbar">
-      <a class="brand" href="#/" aria-label="First or Eighth home">
+      <a class="brand" href="#/" aria-label="First or Eighth home" data-nav-link>
         <span class="brand-mark" aria-hidden="true"></span>
         <span>FIRST_OR_EIGHTH</span>
       </a>
       <nav class="desktop-nav" aria-label="Primary">
-        ${links.map(([id, label, href]) => navLink(id, label, href, routeName)).join("")}
+        ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
-        <span class="live-pill"><span></span>3 online</span>
+        <span class="online-pill"><span></span>${Object.keys(creators).length} online</span>
         <button class="icon-button" data-action="toggle-nav" aria-label="Open menu" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
@@ -197,92 +168,70 @@ function topbar() {
       ${state.navOpen ? "" : "inert"}
     >
       <button class="drawer-close" data-action="close-nav" aria-label="Close menu">x</button>
-      ${links.map(([id, label, href]) => navLink(id, label, href, routeName)).join("")}
+      ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
       <div class="drawer-foot">
         <span class="status-dot"></span>
-        Michael edits all current titles
+        ${games.length} ${games.length === 1 ? "game" : "games"} in rotation
       </div>
     </aside>
   `;
 }
 
-function navLink(id, label, href, routeName) {
-  const active = (id === "home" && routeName === "home") || id === routeName;
+function navLink(id, label, href) {
+  const active = (id === "home" && state.route.name === "home") || id === state.route.name;
   return `<a class="${active ? "is-active" : ""}" href="${href}" data-nav-link>${label}</a>`;
 }
 
 function mainView() {
   if (state.route.name === "game") return gameDetail(games.find((game) => game.id === state.route.id));
   if (state.route.name === "creators") return creatorsPage();
-  if (state.route.name === "stats") return statsPage();
   if (state.route.name === "about") return aboutPage();
   return libraryPage();
 }
 
 function libraryPage() {
-  const featured = games[0];
   const filtered = filteredGames();
-  const showFeatured = !state.query && state.genre === "All";
-  const list = showFeatured ? filtered.filter((game) => game.id !== featured.id) : filtered;
   const genres = ["All", ...new Set(games.map((game) => game.genre))];
+  const wipCount = games.filter((game) => game.status === "WIP").length;
 
   return `
     <main class="page">
-      ${showFeatured ? hero(featured) : ""}
+      <section class="library-head">
+        <div>
+          <h1>Games.</h1>
+          <p>Everything we've built, plus what's still in the oven.</p>
+        </div>
+        <span>${games.length} ${games.length === 1 ? "game" : "games"} / ${wipCount} WIP</span>
+      </section>
+
       <section class="controls" aria-label="Game filters">
         <label class="search-box">
           <span>Search</span>
-          <input data-search type="search" value="${escapeAttr(state.query)}" placeholder="Search games, genres, creators" />
+          <input data-search type="search" value="${escapeAttr(state.query)}" placeholder="Search games" />
         </label>
         <label class="sort-box">
           <span>Sort</span>
           <select data-sort>
-            ${option("rank", "Ranked")}
-            ${option("live", "Live first")}
+            ${option("newest", "Newest")}
             ${option("az", "A to Z")}
-            ${option("creator", "Creator")}
+            ${option("creator", "Builder")}
+            ${option("status", "Live first")}
           </select>
         </label>
       </section>
-      <section class="section-head">
-        <p>${showFeatured ? "All games" : "Results"} / ${filtered.length} ${filtered.length === 1 ? "title" : "titles"}</p>
-        <div class="chip-row" aria-label="Genre filters">
+
+      ${genres.length > 2 ? `
+        <section class="chip-row" aria-label="Genre filters">
           ${genres.map((genre) => `
-            <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${genre}">
-              ${genre}
+            <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
+              ${escapeHtml(genre)}
             </button>
           `).join("")}
-        </div>
-      </section>
-      ${list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState()}
-    </main>
-  `;
-}
+        </section>
+      ` : ""}
 
-function hero(game) {
-  return `
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Now playing / featured</p>
-        <h1>First or Eighth.</h1>
-        <p class="hero-desc">
-          A shared lobby for the games we actually play: fast to open, easy to route, and loud enough to feel like a LAN night.
-        </p>
-        <div class="hero-meta">
-          <span>4 games</span>
-          <span>3 builders</span>
-          <span>No filler</span>
-        </div>
-        <div class="hero-actions">
-          ${playButton(game, "Play Ding")}
-          <button class="button button-secondary" data-action="open-game" data-game="${game.id}">Read card</button>
-        </div>
-      </div>
-      <button class="hero-art" data-action="open-game" data-game="${game.id}" aria-label="Open Ding details">
-        <span class="hero-badge">#1 this week</span>
-        ${thumb(game, true)}
-      </button>
-    </section>
+      ${filtered.length ? `<section class="game-grid">${filtered.map(gameCard).join("")}</section>` : emptyState()}
+    </main>
   `;
 }
 
@@ -291,41 +240,37 @@ function filteredGames() {
   let list = games.filter((game) => {
     const creator = creators[game.creator].name;
     const editorNames = game.editors.map((id) => creators[id].name).join(" ");
-    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames}`.toLowerCase();
+    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames} ${game.status}`.toLowerCase();
     return (state.genre === "All" || game.genre === state.genre) && (!query || haystack.includes(query));
   });
 
-  if (state.sort === "rank") list = list.sort((a, b) => a.rank - b.rank);
-  if (state.sort === "live") list = list.sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || a.rank - b.rank);
-  if (state.sort === "az") list = list.sort((a, b) => a.name.localeCompare(b.name));
-  if (state.sort === "creator") list = list.sort((a, b) => creators[a.creator].name.localeCompare(creators[b.creator].name));
+  if (state.sort === "newest") list = [...list].sort((a, b) => b.year.localeCompare(a.year) || a.name.localeCompare(b.name));
+  if (state.sort === "az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+  if (state.sort === "creator") list = [...list].sort((a, b) => creators[a.creator].name.localeCompare(creators[b.creator].name) || a.name.localeCompare(b.name));
+  if (state.sort === "status") list = [...list].sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || a.name.localeCompare(b.name));
   return list;
 }
 
 function option(value, label) {
-  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>${label}</option>`;
+  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>Sort: ${label}</option>`;
 }
 
 function gameCard(game) {
   return `
-    <article class="game-card">
+    <article class="game-card" style="--accent:${game.accent}">
+      ${game.status === "WIP" ? wipBadge() : ""}
       <button class="card-open" data-action="open-game" data-game="${game.id}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
-        <span class="rank">#${game.rank}</span>
       </button>
       <div class="card-body">
         <div class="card-title-row">
-          <h2>${game.name}</h2>
-          <span class="status ${game.status.toLowerCase()}">${game.status}</span>
+          <h2>${escapeHtml(game.name)}</h2>
+          <span class="year-pill">${game.year}</span>
         </div>
-        <p>${game.tagline}</p>
-        <div class="card-credits">
-          ${personPill(game.creator, "Creator")}
-          ${game.editors.map((id) => personPill(id, "Editor")).join("")}
-        </div>
-        <div class="card-actions">
-          ${playButton(game, game.status === "Live" ? "Play" : "Soon")}
-          <button class="small-link" data-action="open-game" data-game="${game.id}">Details</button>
+        <p class="card-tagline">${escapeHtml(game.tagline)}</p>
+        <div class="card-foot">
+          ${personPill(game.creator, game.editors.length)}
+          <span>${escapeHtml(game.genre)}</span>
         </div>
       </div>
     </article>
@@ -334,44 +279,52 @@ function gameCard(game) {
 
 function gameDetail(game) {
   const related = games.filter((candidate) => candidate.id !== game.id);
+  const isWip = game.status === "WIP";
+
   return `
     <main class="page detail-page">
-      <a class="back-link" href="#/">Back to library</a>
+      <a class="back-link" href="#/">Back to games</a>
       <section class="detail-hero">
-        <div class="detail-media">${thumb(game, true)}</div>
+        <div class="detail-media" style="--accent:${game.accent}">
+          ${isWip ? wipBadge() : ""}
+          ${thumb(game, true)}
+        </div>
         <div class="detail-copy">
-          <p class="eyebrow">${game.genre} / ${game.status}</p>
-          <h1>${game.name}.</h1>
-          <p class="detail-tagline">${game.tagline}</p>
-          <p>${game.description}</p>
+          <p class="eyebrow ${isWip ? "is-wip" : ""}">${isWip ? "Work in progress" : `${game.genre} / ${game.year}`}</p>
+          <h1>${escapeHtml(game.name)}.</h1>
+          <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
           <div class="detail-actions">
-            ${playButton(game, game.status === "Live" ? `Play ${game.name}` : "Incoming")}
-            <button class="button button-secondary" data-action="copy-link">Copy page link</button>
+            ${playButton(game, isWip ? "Not ready" : `Play ${game.name}`)}
+            ${isWip ? `<button class="button button-secondary" disabled>Follow build</button>` : `<button class="button button-secondary" data-action="copy-link">Copy page link</button>`}
+          </div>
+          <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
+            <div class="kv"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
+            <div class="kv"><span>Year</span><strong>${game.year}</strong></div>
+            <div class="kv"><span>Status</span><strong>${game.status}</strong></div>
           </div>
         </div>
       </section>
-      <section class="stat-grid">
-        ${Object.entries(game.stats).map(([key, value]) => `
-          <div class="stat-card">
-            <span>${key}</span>
-            <strong>${value}</strong>
-          </div>
-        `).join("")}
+
+      <section class="detail-section">
+        <h2>About</h2>
+        <p>${escapeHtml(game.description)}</p>
+        ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${creators[game.creator].name} on Discord.</p>` : ""}
       </section>
-      <section class="credits-panel">
-        <div>
-          <p class="eyebrow">Credits</p>
-          <h2>Built by friends, edited into one cabinet.</h2>
-        </div>
+
+      <section class="detail-section">
+        <h2>Built by</h2>
         <div class="credit-list">
           ${creditCard(game.creator, "Creator")}
           ${game.editors.map((id) => creditCard(id, "Editor")).join("")}
         </div>
       </section>
-      <section class="related">
-        <div class="section-head compact"><p>Keep playing</p></div>
-        <div class="game-grid mini">${related.map(gameCard).join("")}</div>
-      </section>
+
+      ${related.length ? `
+        <section class="related">
+          <h2>Other games</h2>
+          <div class="game-grid related-grid">${related.map(gameCard).join("")}</div>
+        </section>
+      ` : ""}
     </main>
   `;
 }
@@ -379,18 +332,22 @@ function gameDetail(game) {
 function creatorsPage() {
   return `
     <main class="page">
-      <section class="page-intro">
-        <p class="eyebrow">The builders</p>
-        <h1>Three friends, one rotating game shelf.</h1>
+      <section class="library-head">
+        <div>
+          <h1>Builders.</h1>
+          <p>The three of us, and what we've shipped.</p>
+        </div>
       </section>
       <section class="creator-grid">
         ${Object.entries(creators).map(([id, creator]) => {
           const created = games.filter((game) => game.creator === id);
           const edited = games.filter((game) => game.editors.includes(id));
+          const listed = [...created, ...edited.filter((game) => !created.includes(game))];
+
           return `
             <article class="creator-card">
               <div class="creator-head">
-                <span class="avatar" style="--avatar:${creator.color}">${creator.name[0]}</span>
+                <span class="person-orb" style="--person:${creator.color}" aria-hidden="true"></span>
                 <div>
                   <h2>${creator.name}</h2>
                   <p>${creator.handle}</p>
@@ -401,14 +358,16 @@ function creatorsPage() {
                 <span><strong>${created.length}</strong> created</span>
                 <span><strong>${edited.length}</strong> edited</span>
               </div>
-              <div class="creator-games">
-                ${[...created, ...edited.filter((game) => !created.includes(game))].map((game) => `
-                  <button data-action="open-game" data-game="${game.id}">
-                    <span>${game.name}</span>
-                    <small>${game.creator === id ? "Creator" : "Editor"}</small>
-                  </button>
-                `).join("")}
-              </div>
+              ${listed.length ? `
+                <div class="creator-games">
+                  ${listed.map((game) => `
+                    <button data-action="open-game" data-game="${game.id}">
+                      <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
+                      <small>${game.creator === id ? "Creator" : "Editor"}</small>
+                    </button>
+                  `).join("")}
+                </div>
+              ` : ""}
             </article>
           `;
         }).join("")}
@@ -417,48 +376,22 @@ function creatorsPage() {
   `;
 }
 
-function statsPage() {
-  const live = games.filter((game) => game.status === "Live").length;
-  const incoming = games.length - live;
-  return `
-    <main class="page">
-      <section class="page-intro">
-        <p class="eyebrow">Lobby stats</p>
-        <h1>Small catalog, fast routes.</h1>
-      </section>
-      <section class="stat-grid wide">
-        <div class="stat-card"><span>Games</span><strong>${games.length}</strong></div>
-        <div class="stat-card"><span>Live</span><strong>${live}</strong></div>
-        <div class="stat-card"><span>Incoming</span><strong>${incoming}</strong></div>
-        <div class="stat-card"><span>Editors</span><strong>1</strong></div>
-      </section>
-      <section class="leaderboard">
-        ${games.map((game) => `
-          <button class="leader-row" data-action="open-game" data-game="${game.id}">
-            <span>${String(game.rank).padStart(2, "0")}</span>
-            <strong>${game.name}</strong>
-            <em>${creators[game.creator].name}</em>
-            <small>${game.status}</small>
-          </button>
-        `).join("")}
-      </section>
-    </main>
-  `;
-}
-
 function aboutPage() {
   return `
     <main class="page about-page">
-      <section class="page-intro">
-        <p class="eyebrow">About</p>
-        <h1>First or Eighth is the friend-group game shelf.</h1>
+      <section class="library-head">
+        <div>
+          <h1>Hi.</h1>
+          <p>First or Eighth is the friend-group game shelf.</p>
+        </div>
       </section>
       <div class="about-copy">
         <p>
-          The name is a light TFT joke: first place or eighth place, glory or instant queue. The site keeps that energy without becoming a TFT fansite.
+          We make small games on weekends. Some of them you play standing up in a kitchen at 2am.
+          Some are still being built. This is where they live: a fast route to the current rotation.
         </p>
         <p>
-          Ding, Valence, and Pancake are Jeremy games. 25 Words or Less is Matthew's. Michael edited the current set so they sit together as one lobby.
+          The name is a light TFT joke: first place or eighth place, glory or instant queue. No tracking, no ads, no coins.
         </p>
       </div>
     </main>
@@ -467,27 +400,24 @@ function aboutPage() {
 
 function thumb(game, big = false) {
   return `
-    <div class="thumb ${big ? "big" : ""}" style="--accent:${game.accent}; --secondary:${game.secondary}">
-      <img src="${game.screenshot}" alt="" loading="lazy" />
-      <div class="thumb-overlay">
-        <span>${game.genre}</span>
-        <strong>${game.name.split(" ").map((word) => word[0]).join("").slice(0, 3)}</strong>
-      </div>
+    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${game.accent}; --accent-dark:${shade(game.accent, -70)}">
+      <span class="thumb-pattern" aria-hidden="true"></span>
+      <span class="thumb-tag">[ thumbnail ]</span>
     </div>
   `;
 }
 
 function playButton(game, label) {
   if (!game.url) return `<button class="button is-disabled" disabled>${label}</button>`;
-  return `<a class="button" href="${game.url}" target="_blank" rel="noreferrer">${label}</a>`;
+  return `<a class="button" href="${game.url}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
 }
 
-function personPill(id, role) {
+function personPill(id, editorCount = 0) {
   const person = creators[id];
   return `
     <span class="person-pill">
-      <span style="--dot:${person.color}"></span>
-      ${person.name} <small>${role}</small>
+      <span style="--person:${person.color}" aria-hidden="true"></span>
+      ${person.name}${editorCount ? ` <small>+${editorCount}</small>` : ""}
     </span>
   `;
 }
@@ -496,7 +426,7 @@ function creditCard(id, role) {
   const person = creators[id];
   return `
     <article class="credit-card">
-      <span class="avatar" style="--avatar:${person.color}">${person.name[0]}</span>
+      <span class="person-orb" style="--person:${person.color}" aria-hidden="true"></span>
       <div>
         <h3>${person.name}</h3>
         <p>${role} / ${person.handle}</p>
@@ -505,11 +435,15 @@ function creditCard(id, role) {
   `;
 }
 
+function wipBadge() {
+  return `<span class="wip-badge"><span></span>WIP</span>`;
+}
+
 function emptyState() {
   return `
     <section class="empty-state">
-      <h2>No matching games.</h2>
-      <p>Clear the search or switch genres.</p>
+      <h2>Nothing here.</h2>
+      <p>Try a different search or clear the filters.</p>
     </section>
   `;
 }
@@ -530,13 +464,44 @@ async function copyCurrentLink(button) {
 function footer() {
   return `
     <footer class="footer">
-      <span>First or Eighth</span>
+      <span>FIRST_OR_EIGHTH</span>
+      <span class="footer-creators">
+        ${Object.values(creators).map((creator) => `
+          <span><span style="--person:${creator.color}"></span>${creator.name}</span>
+        `).join("")}
+      </span>
       <span>No ads / no tracking / no coins</span>
-      <span>California, 2026</span>
     </footer>
   `;
 }
 
+function restoreSearchFocus() {
+  const input = document.querySelector("[data-search]");
+  if (!input) return;
+  input.focus();
+  input.setSelectionRange(state.query.length, state.query.length);
+}
+
+function shade(hex, amount) {
+  const value = hex.replace("#", "");
+  const number = Number.parseInt(value, 16);
+  const red = clamp((number >> 16) + amount);
+  const green = clamp(((number >> 8) & 255) + amount);
+  const blue = clamp((number & 255) + amount);
+  return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
+}
+
+function clamp(value) {
+  return Math.max(0, Math.min(255, value));
+}
+
 function escapeAttr(value) {
-  return String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+  return escapeHtml(value).replaceAll('"', "&quot;");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }

@@ -17,19 +17,22 @@ for (const snippet of ["First or Eighth", "src/app.js", "styles.css"]) {
 }
 
 for (const url of [
-  "https://ding-game.vercel.app/",
-  "https://25-words-or-less.vercel.app/",
-  "https://valence1.vercel.app/"
+  "https://valence1.vercel.app/",
+  "https://25-words-or-less.vercel.app/"
 ]) {
   if (!js.includes(url)) fail(`src/app.js missing game URL ${url}`);
 }
 
-for (const name of ["Jeremy", "Matthew", "Michael", "Pancake"]) {
+for (const name of ["Jeremy", "Matthew", "Michael", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
   if (!js.includes(name)) fail(`src/app.js missing expected game/creator copy: ${name}`);
 }
 
-for (const query of ["@media (max-width: 840px)", "@media (max-width: 520px)", ".mobile-drawer"]) {
+for (const query of ["@media (max-width: 840px)", "@media (max-width: 520px)", "@media (orientation: landscape) and (max-height: 500px)", ".mobile-drawer"]) {
   if (!css.includes(query)) fail(`styles.css missing responsive rule ${query}`);
+}
+
+for (const forbidden of ["ding-game.vercel.app", "statsPage", "#/stats", "hero("]) {
+  if (js.includes(forbidden)) fail(`src/app.js still includes removed design element: ${forbidden}`);
 }
 
 for (const file of walk("assets")) {
