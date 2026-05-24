@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-label="Valence thumbnail">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#43dfd1"/>
+      <stop offset=".5" stop-color="#101b31"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <g stroke="#fff" stroke-width="4" opacity=".18">
+    <path d="M180 160h840M180 300h840M180 440h840M180 580h840"/>
+    <path d="M250 90v560M420 90v560M590 90v560M760 90v560M930 90v560"/>
+  </g>
+  <g filter="url(#glow)">
+    <line x1="330" y1="380" x2="600" y2="230" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+    <line x1="600" y1="230" x2="880" y2="404" stroke="#ffca3a" stroke-width="18" stroke-linecap="round"/>
+    <line x1="330" y1="380" x2="592" y2="526" stroke="#ff4d8d" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="330" cy="380" r="76" fill="#080a12" stroke="#43dfd1" stroke-width="18"/>
+    <circle cx="600" cy="230" r="62" fill="#080a12" stroke="#fff" stroke-width="18"/>
+    <circle cx="880" cy="404" r="84" fill="#080a12" stroke="#8b5cf6" stroke-width="18"/>
+    <circle cx="592" cy="526" r="58" fill="#080a12" stroke="#ff4d8d" stroke-width="18"/>
+  </g>
+  <text x="64" y="674" fill="#fff" font-family="Arial Black, sans-serif" font-size="104" letter-spacing="-5">VALENCE</text>
+</svg>

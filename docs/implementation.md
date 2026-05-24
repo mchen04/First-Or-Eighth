@@ -13,8 +13,6 @@ The repo started empty except for Git metadata, so the hub was implemented as a 
 - Creator and editor credit treatment.
 - Stats and about pages.
 - Tap targets sized for phones and landscape layouts.
-- Viewport-fit route layouts with no document scrolling across tested desktop, portrait phone, and landscape phone sizes.
-- Live PNG thumbnails captured from the deployed Ding, Valence, and 25 Words or Less pages.
 
 ## Game Data
 
@@ -24,13 +22,6 @@ Only the user's current games are included. Prototype filler titles were intenti
 - Valence: live link, creator Jeremy, editor Michael.
 - 25 Words or Less: live link, creator Matthew, editor Michael.
 - Pancake: incoming, creator Jeremy, editor Michael.
-
-## Thumbnail Sources
-
-- `assets/thumb-ding.png`: captured from <https://ding-game.vercel.app/>
-- `assets/thumb-valence.png`: captured from <https://valence1.vercel.app/>
-- `assets/thumb-25.png`: captured from <https://25-words-or-less.vercel.app/>
-- `assets/thumb-pancake.svg`: incoming placeholder; replace once Pancake has a deployed URL.
 
 ## Verification Targets
 

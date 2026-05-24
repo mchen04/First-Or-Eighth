@@ -9,10 +9,6 @@ First or Eighth is a responsive game hub for the current friend-group games:
 
 The visual direction follows the selected Claude Design prototype, `First or Eighth - Live.html`: a neon dark leaderboard/library with a mobile drawer, searchable cards, game detail views, creator credits, stats, and a short about page.
 
-The interface is intentionally viewport-fit: each route is designed to fit inside the current desktop or phone viewport without document scrolling. On very small and landscape screens, secondary copy is clamped and the layouts compress into denser cards so the whole screen remains visible.
-
-Live game thumbnails are PNG screenshots captured from the deployed game pages. Pancake still uses an incoming-game graphic because no deployed Pancake URL is available yet.
-
 ## Credits
 
 - Jeremy created Ding, Valence, and Pancake.
