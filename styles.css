@@ -850,6 +850,19 @@ select:focus-visible {
   color: var(--text-mute);
 }
 
+.creator-handle,
+.inline-handle {
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.creator-handle:hover,
+.inline-handle:hover {
+  color: var(--text);
+}
+
 .related {
   margin-top: 40px;
 }

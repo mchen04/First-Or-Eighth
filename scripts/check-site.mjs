@@ -28,6 +28,9 @@ for (const url of [
   "https://ding-game.vercel.app/",
   "https://valence1.vercel.app/",
   "https://25-words-or-less.vercel.app/",
+  "https://github.com/mchen04",
+  "https://github.com/jormyy",
+  "https://github.com/matthewh8",
   "https://github.com/jormyy/ding",
   "https://github.com/jormyy/valence",
   "https://github.com/jormyy/pancake",
@@ -53,6 +56,10 @@ for (const forbidden of ["statsPage", "#/stats", "hero("]) {
 }
 
 if (!js.includes('sort: "az"')) fail("src/app.js should default to alphabetical sorting");
+
+for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "A few specials with AI doing things"]) {
+  if (!js.includes(snippet)) fail(`src/app.js missing requested builder/about copy: ${snippet}`);
+}
 
 for (const file of walk("assets")) {
   if (!file.endsWith(".svg")) continue;

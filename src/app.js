@@ -1,21 +1,24 @@
 const creators = {
   michael: {
     name: "Michael",
-    handle: "@michael",
+    handle: "@mchen04",
+    githubUrl: "https://github.com/mchen04",
     color: "#ff3d7f",
-    bio: "Keeps the hub edited, current, and easy to route through."
+    bio: "Autist #3."
   },
   jeremy: {
     name: "Jeremy",
-    handle: "@jeremy",
+    handle: "@jormyy",
+    githubUrl: "https://github.com/jormyy",
     color: "#54d2d2",
-    bio: "Builds fast, weird game ideas for the group rotation."
+    bio: "Autist #1."
   },
   matthew: {
     name: "Matthew",
-    handle: "@matthew",
+    handle: "@matthewh8",
+    githubUrl: "https://github.com/matthewh8",
     color: "#ffb627",
-    bio: "Builds and tunes party-game ideas for the friend group."
+    bio: "Autist #2."
   }
 };
 
@@ -175,7 +178,7 @@ function topbar() {
         ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
-        <span class="online-pill"><span></span>${Object.keys(creators).length} online</span>
+        <span class="online-pill" title="${onlineCount()} live playable games"><span></span>${onlineCount()} online</span>
         <button class="icon-button" data-action="toggle-nav" aria-label="Open menu" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
@@ -377,7 +380,7 @@ function creatorsPage() {
         </div>
       </section>
       <section class="creator-grid">
-        ${Object.entries(creators).map(([id, creator]) => {
+        ${sortedCreators().map(([id, creator]) => {
           const created = games.filter((game) => game.creator === id);
           const edited = games.filter((game) => game.editors.includes(id));
           const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
@@ -388,7 +391,7 @@ function creatorsPage() {
                 <span class="person-orb" style="--person:${creator.color}" aria-hidden="true"></span>
                 <div>
                   <h2>${creator.name}</h2>
-                  <p>${creator.handle}</p>
+                  <a class="creator-handle" href="${escapeAttr(creator.githubUrl)}" target="_blank" rel="noreferrer noopener">${creator.handle}</a>
                 </div>
               </div>
               <p>${creator.bio}</p>
@@ -425,11 +428,10 @@ function aboutPage() {
       </section>
       <div class="about-copy">
         <p>
-          We make small games on weekends. Some of them you play standing up in a kitchen at 2am.
-          Some are still being built. This is where they live: a fast route to the current rotation.
+          A few specials with AI doing things: small games, fast prototypes, weird tools, and whatever makes the group want to queue one more round.
         </p>
         <p>
-          The name is a light TFT joke: first place or eighth place, glory or instant queue. No tracking, no ads, no coins.
+          First or Eighth is the shelf for the current rotation. Some games are live, some are still cooking, and the links stay one click away.
         </p>
       </div>
     </main>
@@ -472,7 +474,7 @@ function creditCard(id, role) {
       <span class="person-orb" style="--person:${person.color}" aria-hidden="true"></span>
       <div>
         <h3>${person.name}</h3>
-        <p>${role} / ${person.handle}</p>
+        <p>${role} / <a class="inline-handle" href="${escapeAttr(person.githubUrl)}" target="_blank" rel="noreferrer noopener">${person.handle}</a></p>
       </div>
     </article>
   `;
@@ -509,7 +511,7 @@ function footer() {
     <footer class="footer">
       <span>FIRST_OR_EIGHTH</span>
       <span class="footer-creators">
-        ${Object.values(creators).map((creator) => `
+        ${sortedCreators().map(([, creator]) => `
           <span><span style="--person:${creator.color}"></span>${creator.name}</span>
         `).join("")}
       </span>
@@ -523,6 +525,14 @@ function restoreSearchFocus() {
   if (!input) return;
   input.focus();
   input.setSelectionRange(state.query.length, state.query.length);
+}
+
+function sortedCreators() {
+  return Object.entries(creators).sort(([, a], [, b]) => a.name.localeCompare(b.name));
+}
+
+function onlineCount() {
+  return games.filter((game) => game.status === "Live" && game.url).length;
 }
 
 function shade(hex, amount) {
