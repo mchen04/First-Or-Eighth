@@ -2,10 +2,16 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const required = ["index.html", "styles.css", "src/app.js", "README.md"];
+const screenshotThumbs = ["assets/thumb-ding.png", "assets/thumb-valence.png", "assets/thumb-25.png"];
 const missing = required.filter((file) => !exists(file));
 
 if (missing.length) {
   fail(`Missing required files: ${missing.join(", ")}`);
+}
+
+const missingThumbs = screenshotThumbs.filter((file) => !exists(file));
+if (missingThumbs.length) {
+  fail(`Missing live screenshot thumbnails: ${missingThumbs.join(", ")}`);
 }
 
 const html = readFileSync("index.html", "utf8");
@@ -22,6 +28,11 @@ for (const url of [
   "https://valence1.vercel.app/"
 ]) {
   if (!js.includes(url)) fail(`src/app.js missing game URL ${url}`);
+}
+
+for (const thumb of screenshotThumbs) {
+  const header = readFileSync(thumb).subarray(0, 8).toString("hex");
+  if (header !== "89504e470d0a1a0a") fail(`Thumbnail is not a PNG screenshot: ${thumb}`);
 }
 
 for (const name of ["Jeremy", "Matthew", "Michael", "Pancake"]) {

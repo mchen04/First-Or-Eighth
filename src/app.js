@@ -35,7 +35,7 @@ const games = [
     description:
       "A quick-hit rhythm and reaction game built for the kind of group session where every round starts as a joke and ends with a rematch.",
     stats: { mode: "Browser", players: "Group", pace: "Fast", state: "Live" },
-    screenshot: "assets/thumb-ding.svg"
+    screenshot: "assets/thumb-ding.png"
   },
   {
     id: "valence",
@@ -52,7 +52,7 @@ const games = [
     description:
       "A chemistry-flavored puzzle game with a clean board-game rhythm: read the state, commit to the bond, and hope the next move still works.",
     stats: { mode: "Browser", players: "Solo", pace: "Thinky", state: "Live" },
-    screenshot: "assets/thumb-valence.svg"
+    screenshot: "assets/thumb-valence.png"
   },
   {
     id: "twenty-five",
@@ -69,7 +69,7 @@ const games = [
     description:
       "A party-word game about restraint under pressure. The constraint is simple, which is exactly why the room gets loud.",
     stats: { mode: "Browser", players: "Teams", pace: "Chaotic", state: "Live" },
-    screenshot: "assets/thumb-25.svg"
+    screenshot: "assets/thumb-25.png"
   },
   {
     id: "pancake",
@@ -159,7 +159,7 @@ function readRoute() {
 function render() {
   app.innerHTML = `
     ${topbar()}
-    ${mainView()}
+    <div class="screen">${mainView()}</div>
     ${footer()}
   `;
 }
@@ -227,34 +227,36 @@ function libraryPage() {
   const genres = ["All", ...new Set(games.map((game) => game.genre))];
 
   return `
-    <main class="page">
+    <main class="page library-page">
       ${showFeatured ? hero(featured) : ""}
-      <section class="controls" aria-label="Game filters">
-        <label class="search-box">
-          <span>Search</span>
-          <input data-search type="search" value="${escapeAttr(state.query)}" placeholder="Search games, genres, creators" />
-        </label>
-        <label class="sort-box">
-          <span>Sort</span>
-          <select data-sort>
-            ${option("rank", "Ranked")}
-            ${option("live", "Live first")}
-            ${option("az", "A to Z")}
-            ${option("creator", "Creator")}
-          </select>
-        </label>
-      </section>
-      <section class="section-head">
-        <p>${showFeatured ? "All games" : "Results"} / ${filtered.length} ${filtered.length === 1 ? "title" : "titles"}</p>
-        <div class="chip-row" aria-label="Genre filters">
-          ${genres.map((genre) => `
-            <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${genre}">
-              ${genre}
-            </button>
-          `).join("")}
-        </div>
-      </section>
-      ${list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState()}
+      <div class="library-stack">
+        <section class="controls" aria-label="Game filters">
+          <label class="search-box">
+            <span>Search</span>
+            <input data-search type="search" value="${escapeAttr(state.query)}" placeholder="Search games" />
+          </label>
+          <label class="sort-box">
+            <span>Sort</span>
+            <select data-sort>
+              ${option("rank", "Ranked")}
+              ${option("live", "Live first")}
+              ${option("az", "A to Z")}
+              ${option("creator", "Creator")}
+            </select>
+          </label>
+        </section>
+        <section class="section-head">
+          <p>${showFeatured ? "All games" : "Results"} / ${filtered.length} ${filtered.length === 1 ? "title" : "titles"}</p>
+          <div class="chip-row" aria-label="Genre filters">
+            ${genres.map((genre) => `
+              <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${genre}">
+                ${genre}
+              </button>
+            `).join("")}
+          </div>
+        </section>
+        ${list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState()}
+      </div>
     </main>
   `;
 }
@@ -333,44 +335,39 @@ function gameCard(game) {
 }
 
 function gameDetail(game) {
-  const related = games.filter((candidate) => candidate.id !== game.id);
   return `
     <main class="page detail-page">
       <a class="back-link" href="#/">Back to library</a>
-      <section class="detail-hero">
+      <section class="detail-shell">
         <div class="detail-media">${thumb(game, true)}</div>
         <div class="detail-copy">
           <p class="eyebrow">${game.genre} / ${game.status}</p>
           <h1>${game.name}.</h1>
           <p class="detail-tagline">${game.tagline}</p>
-          <p>${game.description}</p>
+          <p class="detail-description">${game.description}</p>
           <div class="detail-actions">
             ${playButton(game, game.status === "Live" ? `Play ${game.name}` : "Incoming")}
             <button class="button button-secondary" data-action="copy-link">Copy page link</button>
           </div>
         </div>
-      </section>
-      <section class="stat-grid">
-        ${Object.entries(game.stats).map(([key, value]) => `
-          <div class="stat-card">
-            <span>${key}</span>
-            <strong>${value}</strong>
+        <section class="stat-grid detail-stats">
+          ${Object.entries(game.stats).map(([key, value]) => `
+            <div class="stat-card">
+              <span>${key}</span>
+              <strong>${value}</strong>
+            </div>
+          `).join("")}
+        </section>
+        <section class="credits-panel">
+          <div>
+            <p class="eyebrow">Credits</p>
+            <h2>Built by friends, edited into one cabinet.</h2>
           </div>
-        `).join("")}
-      </section>
-      <section class="credits-panel">
-        <div>
-          <p class="eyebrow">Credits</p>
-          <h2>Built by friends, edited into one cabinet.</h2>
-        </div>
-        <div class="credit-list">
-          ${creditCard(game.creator, "Creator")}
-          ${game.editors.map((id) => creditCard(id, "Editor")).join("")}
-        </div>
-      </section>
-      <section class="related">
-        <div class="section-head compact"><p>Keep playing</p></div>
-        <div class="game-grid mini">${related.map(gameCard).join("")}</div>
+          <div class="credit-list">
+            ${creditCard(game.creator, "Creator")}
+            ${game.editors.map((id) => creditCard(id, "Editor")).join("")}
+          </div>
+        </section>
       </section>
     </main>
   `;
@@ -378,7 +375,7 @@ function gameDetail(game) {
 
 function creatorsPage() {
   return `
-    <main class="page">
+    <main class="page creators-page">
       <section class="page-intro">
         <p class="eyebrow">The builders</p>
         <h1>Three friends, one rotating game shelf.</h1>
@@ -421,7 +418,7 @@ function statsPage() {
   const live = games.filter((game) => game.status === "Live").length;
   const incoming = games.length - live;
   return `
-    <main class="page">
+    <main class="page stats-page">
       <section class="page-intro">
         <p class="eyebrow">Lobby stats</p>
         <h1>Small catalog, fast routes.</h1>
