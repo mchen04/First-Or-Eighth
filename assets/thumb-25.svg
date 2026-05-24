@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-label="25 Words or Less thumbnail">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffca3a"/>
+      <stop offset=".52" stop-color="#35123f"/>
+      <stop offset="1" stop-color="#ff4d8d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <g opacity=".22">
+    <rect x="88" y="90" width="1024" height="118" rx="12" fill="#fff"/>
+    <rect x="88" y="242" width="740" height="92" rx="12" fill="#fff"/>
+    <rect x="88" y="370" width="920" height="92" rx="12" fill="#fff"/>
+    <rect x="88" y="498" width="560" height="92" rx="12" fill="#fff"/>
+  </g>
+  <rect x="694" y="438" width="344" height="182" rx="18" fill="#080a12" stroke="#43dfd1" stroke-width="12"/>
+  <text x="738" y="565" fill="#43dfd1" font-family="Arial Black, sans-serif" font-size="104">25</text>
+  <text x="64" y="674" fill="#fff" font-family="Arial Black, sans-serif" font-size="86" letter-spacing="-4">WORDS OR LESS</text>
+</svg>
