@@ -1,7 +1,15 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const required = ["index.html", "styles.css", "src/app.js", "README.md"];
+const required = [
+  "index.html",
+  "styles.css",
+  "src/app.js",
+  "README.md",
+  "assets/shot-valence.png",
+  "assets/shot-ding.png",
+  "assets/shot-25-words.png"
+];
 const missing = required.filter((file) => !exists(file));
 
 if (missing.length) {
@@ -30,6 +38,10 @@ for (const url of [
 
 for (const name of ["Jeremy", "Matthew", "Michael", "Ding", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
   if (!js.includes(name)) fail(`src/app.js missing expected game/creator copy: ${name}`);
+}
+
+for (const copy of ["collaborative poker-ranking", "live sports dashboard", "local same-screen party game"]) {
+  if (!js.includes(copy)) fail(`src/app.js missing GitHub-informed description copy: ${copy}`);
 }
 
 for (const query of ["@media (max-width: 840px)", "@media (max-width: 520px)", "@media (orientation: landscape) and (max-height: 500px)", ".mobile-drawer"]) {

@@ -28,12 +28,13 @@ const games = [
     sourceUrl: "https://github.com/jormyy/valence",
     creator: "jeremy",
     editors: ["michael"],
-    genre: "Puzzle",
+    genre: "Sports",
     year: "2024",
     accent: "#54d2d2",
-    tagline: "Bond fast or break.",
+    screenshot: "assets/shot-valence.png",
+    tagline: "Live scores, streams, and game flow in one board.",
     description:
-      "A chemistry-flavored puzzle game with a clean board-game rhythm: read the board, commit to the bond, and keep the next move alive."
+      "Valence is a live sports dashboard for basketball, baseball, and tennis. It pulls current games, groups them by sport and league, tracks live/upcoming/final states, and opens a watch panel with stream options and game context."
   },
   {
     id: "ding",
@@ -43,12 +44,13 @@ const games = [
     sourceUrl: "https://github.com/jormyy/ding",
     creator: "jeremy",
     editors: ["michael"],
-    genre: "Reflex",
+    genre: "Poker",
     year: "2024",
     accent: "#ff3d7f",
-    tagline: "Tap fast, miss clean, run it back.",
+    screenshot: "assets/shot-ding.png",
+    tagline: "Rank every poker hand before the reveal punishes you.",
     description:
-      "A quick-hit reaction game built for fast rounds, loud misses, and instant rematches."
+      "Ding is a multiplayer collaborative poker-ranking game. Players share a room, move through preflop, flop, turn, river, and reveal, and try to place every hand at the table in exact strength order. A perfect board wins; any inversion costs the table."
   },
   {
     id: "twenty-five",
@@ -61,9 +63,10 @@ const games = [
     genre: "Party",
     year: "2024",
     accent: "#9b5de5",
-    tagline: "Say enough, but not too much.",
+    screenshot: "assets/shot-25-words.png",
+    tagline: "Build teams, pick a mode, and clue under pressure.",
     description:
-      "A party-word game about restraint under pressure. The constraint is simple, which is exactly why the room gets loud."
+      "25 Words or Less is a local same-screen party game with team setup, multiple rule presets, challenge toggles, timers, and large word banks split across green, yellow, red, and money decks."
   },
   {
     id: "pancake",
@@ -436,8 +439,8 @@ function aboutPage() {
 function thumb(game, big = false) {
   return `
     <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${game.accent}; --accent-dark:${shade(game.accent, -70)}">
-      <span class="thumb-pattern" aria-hidden="true"></span>
-      <span class="thumb-tag">[ thumbnail ]</span>
+      ${game.screenshot ? `<img src="${escapeAttr(game.screenshot)}" alt="${escapeAttr(`${game.name} screenshot`)}" loading="lazy" />` : `<span class="thumb-pattern" aria-hidden="true"></span>`}
+      <span class="thumb-tag">${game.screenshot ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
   `;
 }

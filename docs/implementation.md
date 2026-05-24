@@ -11,6 +11,7 @@ The hub is implemented as a dependency-light static site at the repository root.
 - Pattern-based thumbnail placeholders with no title initials or letter icons.
 - Pancake shown as work in progress with a WIP badge, disabled play action, and striped thumbnail treatment.
 - Cards and detail pages expose Play links for live Vercel deployments and GitHub links for source.
+- Live game descriptions are based on their GitHub READMEs/source, and thumbnails use fresh screenshots from the deployed sites.
 - Games are listed alphabetically by default.
 - Sticky top navigation with desktop links and a mobile drawer.
 - Responsive search, genre chips, sort control, card grid, game detail views, builder credits, and about page.
@@ -21,9 +22,9 @@ The hub is implemented as a dependency-light static site at the repository root.
 
 Only the user's current games are included. Add more games by appending to the `games` array in `src/app.js`; the listing, filters, builder counts, related games, and footer all derive from that data.
 
-- Ding: live link and GitHub source, creator Jeremy, editor Michael.
-- Valence: live link and GitHub source, creator Jeremy, editor Michael.
-- 25 Words or Less: live link, creator Matthew, editor Michael.
+- Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding.png`, creator Jeremy, editor Michael.
+- Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence.png`, creator Jeremy, editor Michael.
+- 25 Words or Less: live link, GitHub source, and `assets/shot-25-words.png`, creator Matthew, editor Michael.
 - Pancake: WIP with GitHub source, creator Jeremy, editor Michael.
 
 ## Verification Targets
