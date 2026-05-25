@@ -3,6 +3,11 @@ import { readFileSync, statSync } from "node:fs";
 const required = [
   "index.html",
   "styles.css",
+  "css/shell.css",
+  "css/library.css",
+  "css/detail.css",
+  "css/creators-about.css",
+  "css/footer-responsive.css",
   "src/app.js",
   "README.md",
   "assets/shot-valence.png",
@@ -17,7 +22,15 @@ if (missing.length) {
 
 const html = readFileSync("index.html", "utf8");
 const js = readFileSync("src/app.js", "utf8");
-const css = readFileSync("styles.css", "utf8");
+const cssFiles = [
+  "styles.css",
+  "css/shell.css",
+  "css/library.css",
+  "css/detail.css",
+  "css/creators-about.css",
+  "css/footer-responsive.css"
+];
+const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 
 for (const snippet of ["First or Eighth", "src/app.js", "styles.css"]) {
   if (!html.includes(snippet)) fail(`index.html does not include ${snippet}`);

@@ -1,0 +1,149 @@
+.footer {
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+  padding: 24px var(--pad) calc(24px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.footer-creators {
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.footer-creators span {
+  gap: 6px;
+}
+
+@media (max-width: 960px) {
+  .desktop-nav,
+  .online-pill {
+    display: none;
+  }
+
+  .icon-button {
+    display: grid;
+  }
+}
+
+@media (max-width: 840px) {
+  .library-head,
+  .detail-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .library-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-hero {
+    gap: 18px;
+  }
+
+  .kv-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --topbar-height: 62px;
+  }
+
+  .topbar {
+    min-height: 62px;
+  }
+
+  .brand {
+    letter-spacing: 0.08em;
+  }
+
+  .page {
+    padding-top: 18px;
+  }
+
+  .library-head h1,
+  .detail-copy h1 {
+    font-size: clamp(38px, 13vw, 58px);
+  }
+
+  .detail-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button {
+    width: 100%;
+  }
+
+  .card-title-row,
+  .card-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .link-list a,
+  .link-list > span {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .card-body {
+    min-height: 150px;
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --pad: clamp(14px, 3vw, 24px);
+    --topbar-height: 56px;
+  }
+
+  .topbar {
+    min-height: 56px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-bottom: 8px;
+  }
+
+  .page {
+    padding-top: 14px;
+    padding-bottom: 24px;
+  }
+
+  .library-head {
+    margin-bottom: 14px;
+  }
+
+  .library-head h1 {
+    font-size: clamp(30px, 5vw, 46px);
+  }
+
+  .detail-copy h1 {
+    font-size: clamp(34px, 5vw, 50px);
+  }
+
+  .footer {
+    margin-top: 0;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}

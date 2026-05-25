@@ -1,0 +1,241 @@
+.detail-page {
+  width: min(1120px, 100%);
+}
+
+.back-link {
+  display: inline-flex;
+  margin-bottom: 22px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
+.detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  gap: clamp(20px, 4vw, 36px);
+  align-items: start;
+  margin-bottom: 30px;
+}
+
+.detail-media {
+  position: relative;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.eyebrow.is-wip {
+  color: var(--warn);
+}
+
+.detail-copy h1 {
+  margin: 0;
+  font-size: clamp(40px, 7vw, 76px);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0.98;
+}
+
+.detail-tagline {
+  margin: 14px 0 22px;
+  color: var(--text-dim);
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.25;
+}
+
+.detail-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  box-shadow: 0 12px 28px rgba(255, 61, 127, 0.22);
+  color: #0a0b14;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0 18px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button-secondary,
+.button.is-disabled {
+  border-color: var(--border-hover);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+
+.button:disabled,
+.button.is-disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.kv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kv {
+  padding: 12px 14px;
+}
+
+.kv span,
+.detail-section > h2,
+.related > h2 {
+  margin: 0 0 10px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.kv strong {
+  display: block;
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.detail-section {
+  margin-bottom: 28px;
+}
+
+.detail-section p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.detail-section .wip-note {
+  margin-top: 14px;
+  color: var(--warn);
+  font-size: 14px;
+}
+
+.link-list {
+  display: grid;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.link-list a,
+.link-list > span {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+}
+
+.link-list a:hover {
+  border-color: var(--accent);
+}
+
+.link-list strong {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.link-list span span,
+.link-list a span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.credit-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 10px;
+}
+
+.credit-card {
+  gap: 11px;
+  padding: 13px 14px;
+}
+
+.person-orb {
+  width: 34px;
+  height: 34px;
+}
+
+.credit-card h3,
+.creator-head h2 {
+  margin: 0;
+}
+
+.credit-card p,
+.creator-head p,
+.creator-card p {
+  margin: 3px 0 0;
+  color: var(--text-mute);
+}
+
+.creator-handle,
+.inline-handle {
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.creator-handle:hover,
+.inline-handle:hover {
+  color: var(--text);
+}
+
+.related {
+  margin-top: 40px;
+}
+
+.related-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}

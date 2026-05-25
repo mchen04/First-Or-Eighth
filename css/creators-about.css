@@ -1,0 +1,91 @@
+.creator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 16px;
+}
+
+.creator-card {
+  padding: 20px;
+}
+
+.creator-head {
+  gap: 13px;
+  margin-bottom: 16px;
+}
+
+.creator-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.creator-stats span {
+  min-width: 112px;
+  color: var(--text-mute);
+  font-size: 13px;
+}
+
+.creator-stats strong {
+  display: block;
+  color: var(--text);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.creator-games {
+  display: grid;
+  gap: 2px;
+}
+
+.creator-games button {
+  display: grid;
+  width: 100%;
+  min-height: 46px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.creator-games small {
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inline-wip {
+  margin-left: 8px;
+  color: var(--warn) !important;
+}
+
+.about-page {
+  width: min(900px, 100%);
+}
+
+.about-copy p {
+  margin: 0 0 18px;
+}
+
+.empty-state {
+  padding: 56px 18px;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin: 0 0 6px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--text-mute);
+}
