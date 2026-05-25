@@ -21,8 +21,7 @@
   line-height: 1;
 }
 
-.library-head p,
-.about-copy {
+.library-head p {
   max-width: 680px;
   margin: 8px 0 0;
   color: var(--text-mute);
@@ -375,4 +374,21 @@
 .card-link.is-disabled {
   color: var(--text-faint);
   cursor: not-allowed;
+}
+
+.empty-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  padding: 56px 18px;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin: 0 0 6px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--text-mute);
 }

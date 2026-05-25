@@ -18,14 +18,6 @@
   margin-bottom: 16px;
 }
 
-.creator-head .person-orb {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--person);
-}
-
 .creator-head h2 {
   margin: 0;
 }
@@ -106,23 +98,13 @@
   width: min(900px, 100%);
 }
 
+.about-copy {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--text-mute);
+  font-size: clamp(15px, 1.7vw, 18px);
+}
+
 .about-copy p {
   margin: 0 0 18px;
-}
-
-.empty-state {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-elev);
-  padding: 56px 18px;
-  text-align: center;
-}
-
-.empty-state h2 {
-  margin: 0 0 6px;
-}
-
-.empty-state p {
-  margin: 0;
-  color: var(--text-mute);
 }

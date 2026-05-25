@@ -212,14 +212,6 @@
   padding: 13px 14px;
 }
 
-.person-orb {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--person);
-}
-
 .credit-card h3 {
   margin: 0;
 }

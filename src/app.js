@@ -22,18 +22,7 @@ document.addEventListener("click", (event) => {
   const action = event.target.closest("[data-action]");
   if (!action) return;
 
-  const type = action.dataset.action;
-  if (type === "toggle-nav") setNavOpen(!state.navOpen);
-  if (type === "close-nav") setNavOpen(false);
-  if (type === "nav-link") setNavOpen(false);
-  if (type === "set-genre") state.genre = action.dataset.genre;
-  if (type === "open-game") location.hash = `#/game/${action.dataset.game}`;
-  if (type === "copy-link") {
-    copyCurrentLink(action);
-    return;
-  }
-
-  render();
+  if (handleAction(action)) render();
 });
 
 document.addEventListener("input", (event) => {
@@ -93,6 +82,41 @@ function setNavOpen(open, { restoreScroll = true } = {}) {
   if (restoreScroll) {
     window.scrollTo({ top: state.navScrollY, behavior: "auto" });
   }
+}
+
+function handleAction(action) {
+  switch (action.dataset.action) {
+    case "toggle-nav":
+      setNavOpen(!state.navOpen);
+      return true;
+    case "close-nav":
+      setNavOpen(false);
+      return true;
+    case "nav-link":
+      setNavOpen(false);
+      return action.getAttribute("href") === routeHref();
+    case "set-genre":
+      state.genre = action.dataset.genre;
+      return true;
+    case "open-game":
+      return setHash(`#/game/${action.dataset.game}`);
+    case "copy-link":
+      copyCurrentLink(action);
+      return false;
+    default:
+      return false;
+  }
+}
+
+function setHash(hash) {
+  if (location.hash === hash) return true;
+  location.hash = hash;
+  return false;
+}
+
+function routeHref() {
+  if (state.route.name === "home") return "#/";
+  return `#/${state.route.name}`;
 }
 
 function topbar() {
@@ -221,7 +245,7 @@ function option(value, label) {
 
 function gameCard(game) {
   return `
-    <article class="game-card" style="--accent:${game.accent}">
+    <article class="game-card" style="--accent:${escapeAttr(game.accent)}">
       ${game.status === "WIP" ? wipBadge() : ""}
       <button class="card-open" data-action="open-game" data-game="${game.id}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
@@ -229,7 +253,7 @@ function gameCard(game) {
       <div class="card-body">
         <div class="card-title-row">
           <h2>${escapeHtml(game.name)}</h2>
-          <span class="year-pill">${game.year}</span>
+          <span class="year-pill">${escapeHtml(game.year)}</span>
         </div>
         <p class="card-tagline">${escapeHtml(game.tagline)}</p>
         <div class="card-foot">
@@ -253,7 +277,7 @@ function gameDetail(game) {
     <main class="page detail-page">
       <a class="back-link" href="#/">Back to games</a>
       <section class="detail-hero">
-        <div class="detail-media" style="--accent:${game.accent}">
+        <div class="detail-media" style="--accent:${escapeAttr(game.accent)}">
           ${isWip ? wipBadge() : ""}
           ${thumb(game, true)}
         </div>
@@ -268,8 +292,8 @@ function gameDetail(game) {
           </div>
           <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
             <div class="kv"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
-            <div class="kv"><span>Year</span><strong>${game.year}</strong></div>
-            <div class="kv"><span>Status</span><strong>${game.status}</strong></div>
+            <div class="kv"><span>Year</span><strong>${escapeHtml(game.year)}</strong></div>
+            <div class="kv"><span>Status</span><strong>${escapeHtml(game.status)}</strong></div>
           </div>
         </div>
       </section>
@@ -277,7 +301,7 @@ function gameDetail(game) {
       <section class="detail-section">
         <h2>About</h2>
         <p>${escapeHtml(game.description)}</p>
-        ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${creators[game.creator].name} on Discord.</p>` : ""}
+        ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${escapeHtml(creators[game.creator].name)} on Discord.</p>` : ""}
       </section>
 
       <section class="detail-section">
@@ -324,13 +348,13 @@ function creatorsPage() {
           return `
             <article class="creator-card">
               <div class="creator-head">
-                <span class="person-orb" style="--person:${creator.color}" aria-hidden="true"></span>
+                <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
                 <div>
-                  <h2>${creator.name}</h2>
-                  <a class="creator-handle" href="${escapeAttr(creator.githubUrl)}" target="_blank" rel="noreferrer noopener">${creator.handle}</a>
+                  <h2>${escapeHtml(creator.name)}</h2>
+                  <a class="creator-handle" href="${escapeAttr(creator.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
                 </div>
               </div>
-              <p>${creator.bio}</p>
+              <p>${escapeHtml(creator.bio)}</p>
               <div class="creator-stats">
                 <span><strong>${created.length}</strong> created</span>
                 <span><strong>${edited.length}</strong> edited</span>
@@ -377,7 +401,7 @@ function aboutPage() {
 function thumb(game, big = false) {
   const image = game.screenshot;
   return `
-    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${game.accent}; --accent-dark:${shade(game.accent, -70)}">
+    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${escapeAttr(game.accent)}; --accent-dark:${escapeAttr(shade(game.accent, -70))}">
       ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
       <span class="thumb-tag">${image ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
@@ -409,8 +433,8 @@ function personPill(id, editorCount = 0) {
   const person = creators[id];
   return `
     <span class="person-pill">
-      <span style="--person:${person.color}" aria-hidden="true"></span>
-      ${person.name}${editorCount ? ` <small>+${editorCount}</small>` : ""}
+      <span style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      ${escapeHtml(person.name)}${editorCount ? ` <small>+${editorCount}</small>` : ""}
     </span>
   `;
 }
@@ -419,10 +443,10 @@ function creditCard(id, role) {
   const person = creators[id];
   return `
     <article class="credit-card">
-      <span class="person-orb" style="--person:${person.color}" aria-hidden="true"></span>
+      <span class="person-orb" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
       <div>
-        <h3>${person.name}</h3>
-        <p>${role} / <a class="inline-handle" href="${escapeAttr(person.githubUrl)}" target="_blank" rel="noreferrer noopener">${person.handle}</a></p>
+        <h3>${escapeHtml(person.name)}</h3>
+        <p>${escapeHtml(role)} / <a class="inline-handle" href="${escapeAttr(person.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(person.handle)}</a></p>
       </div>
     </article>
   `;
@@ -460,7 +484,7 @@ function footer() {
       <span>FIRST_OR_EIGHTH</span>
       <span class="footer-creators">
         ${sortedCreators().map(([, creator]) => `
-          <span><span style="--person:${creator.color}"></span>${creator.name}</span>
+          <span><span style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
         `).join("")}
       </span>
       <span>No ads / no tracking / no coins</span>
