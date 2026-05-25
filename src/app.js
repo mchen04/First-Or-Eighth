@@ -34,7 +34,7 @@ const games = [
     genre: "Sports",
     year: "2024",
     accent: "#54d2d2",
-    screenshot: "assets/shot-valence.png",
+    screenshot: imageSet("assets/shot-valence"),
     tagline: "Live scores, streams, and game flow in one board.",
     description:
       "Valence is a live sports dashboard for basketball, baseball, and tennis. It pulls current games, groups them by sport and league, tracks live/upcoming/final states, and opens a watch panel with stream options and game context."
@@ -50,7 +50,7 @@ const games = [
     genre: "Poker",
     year: "2024",
     accent: "#ff3d7f",
-    screenshot: "assets/shot-ding.png",
+    screenshot: imageSet("assets/shot-ding"),
     tagline: "Rank every poker hand before the reveal punishes you.",
     description:
       "Ding is a multiplayer collaborative poker-ranking game. Players share a room, move through preflop, flop, turn, river, and reveal, and try to place every hand at the table in exact strength order. A perfect board wins; any inversion costs the table."
@@ -66,7 +66,7 @@ const games = [
     genre: "Party",
     year: "2024",
     accent: "#9b5de5",
-    screenshot: "assets/shot-25-words.png",
+    screenshot: imageSet("assets/shot-25-words"),
     tagline: "Build teams, pick a mode, and clue under pressure.",
     description:
       "25 Words or Less is a local same-screen party game with team setup, multiple rule presets, challenge toggles, timers, and large word banks split across green, yellow, red, and money decks."
@@ -462,11 +462,30 @@ function aboutPage() {
 }
 
 function thumb(game, big = false) {
+  const image = game.screenshot;
   return `
     <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${game.accent}; --accent-dark:${shade(game.accent, -70)}">
-      ${game.screenshot ? `<img src="${escapeAttr(game.screenshot)}" alt="${escapeAttr(`${game.name} screenshot`)}" loading="lazy" />` : `<span class="thumb-pattern" aria-hidden="true"></span>`}
-      <span class="thumb-tag">${game.screenshot ? "Live capture" : "[ thumbnail ]"}</span>
+      ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
+      <span class="thumb-tag">${image ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
+  `;
+}
+
+function imageSet(base) {
+  return {
+    card: `${base}-card.webp`,
+    detail: `${base}-detail.webp`,
+    fallback: `${base}.png`
+  };
+}
+
+function screenshotImage(game, image, big) {
+  const sizes = big ? "(max-width: 840px) 100vw, 52vw" : "(max-width: 520px) 100vw, 360px";
+  return `
+    <picture>
+      <source type="image/webp" srcset="${escapeAttr(image.card)} 640w, ${escapeAttr(image.detail)} 1200w" sizes="${sizes}" />
+      <img src="${escapeAttr(image.fallback)}" width="1440" height="900" alt="${escapeAttr(`${game.name} screenshot`)}" loading="lazy" />
+    </picture>
   `;
 }
 
