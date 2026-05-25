@@ -8,7 +8,7 @@ The hub is implemented as a dependency-light static site at the repository root.
 
 - Neon dark game shelf from the selected Claude Design direction.
 - Equal-weight game cards with no featured hero.
-- Pattern-based thumbnail placeholders with no title initials or letter icons.
+- Live games use screenshot captures; Pancake uses an in-CSS striped WIP placeholder with no title initials or letter icons.
 - Pancake shown as work in progress with a WIP badge, disabled play action, and striped thumbnail treatment.
 - Cards and detail pages expose Play links for live Vercel deployments and GitHub links for source.
 - Live game descriptions are based on their GitHub READMEs/source, and thumbnails use fresh screenshots from the deployed sites.
@@ -18,7 +18,13 @@ The hub is implemented as a dependency-light static site at the repository root.
 - Sticky top navigation with desktop links and a mobile drawer.
 - Responsive search, genre chips, sort control, card grid, game detail views, builder credits, and about page.
 - Stats route removed per the final design instruction.
-- Breakpoints for tiny phones, normal phones, phone landscape, tablets, and desktop.
+- Small phone portrait: 320 x 568
+- iPhone portrait: 390 x 844
+- Phone landscape: 844 x 390
+- Large phone landscape: 932 x 430
+- Desktop: 1440 x 900
+
+Review screenshots and temporary browser artifacts are intentionally kept outside the repository, normally in `/tmp/first-eighth-critical/`.
 
 ## Game Data
 

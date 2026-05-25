@@ -47,9 +47,17 @@ for (const copy of ["collaborative poker-ranking", "live sports dashboard", "loc
   if (!js.includes(copy)) fail(`src/app.js missing GitHub-informed description copy: ${copy}`);
 }
 
-for (const query of ["@media (max-width: 840px)", "@media (max-width: 520px)", "@media (orientation: landscape) and (max-height: 500px)", ".mobile-drawer"]) {
+for (const query of [
+  "@media (max-width: 840px)",
+  "@media (max-width: 520px)",
+  "@media (orientation: landscape) and (max-height: 500px)",
+  ".mobile-drawer",
+  ".related > h2"
+]) {
   if (!css.includes(query)) fail(`styles.css missing responsive rule ${query}`);
 }
+
+if (css.includes(".related h2")) fail("styles.css must not style related card titles as section headings");
 
 for (const forbidden of ["statsPage", "#/stats", "hero("]) {
   if (js.includes(forbidden)) fail(`src/app.js still includes removed design element: ${forbidden}`);
@@ -62,9 +70,7 @@ for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "
 }
 
 for (const file of walk("assets")) {
-  if (!file.endsWith(".svg")) continue;
-  const body = readFileSync(file, "utf8");
-  if (!body.includes("<svg")) fail(`Asset is not an SVG: ${file}`);
+  if (file.endsWith(".svg")) fail(`Unused SVG artifact should not be checked in: ${file}`);
 }
 
 console.log("Static site checks passed.");

@@ -7,7 +7,7 @@ First or Eighth is a responsive game hub for the current friend-group games:
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/> / source at <https://github.com/matthewh8/25-words-or-less>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
 
-The visual direction follows the final Claude Design handoff for `First or Eighth - Live.html`: a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, creator credits, and a short about page.
+The visual direction is a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, creator credits, and a short about page.
 
 ## Credits
 
@@ -31,15 +31,8 @@ Run the static checks with:
 npm run check
 ```
 
-## Design Source
+## Design Notes
 
-The implementation was based on the fetched Claude Design handoff bundle:
+The current implementation removes the featured hero, stats route, and letter-icon thumbnails. Games stay in an equal alphabetical list, each playable card exposes Play and GitHub links, and the layout is maintained across mobile portrait, mobile landscape, tablet, and desktop.
 
-- `first-or-eighth/README.md`
-- `first-or-eighth/chats/chat1.md`
-- `first-or-eighth/project/First or Eighth - Live.html`
-- `first-or-eighth/project/shared/games.jsx`
-- `first-or-eighth/project/prototype/app.jsx`
-- `first-or-eighth/project/prototype/styles.css`
-
-The final chat instruction selected design #1, then revised it to remove the featured hero, remove stats, remove letter-icon thumbnails, keep the games in an equal alphabetical list, expose Play and GitHub links, and keep the layout solid across mobile portrait, mobile landscape, tablet, and desktop.
+Temporary review screenshots and browser artifacts belong outside the repo, for example under `/tmp/first-eighth-critical/`.

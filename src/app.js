@@ -154,6 +154,7 @@ function readRoute() {
 }
 
 function render() {
+  document.body.classList.toggle("nav-open", state.navOpen);
   app.innerHTML = `
     ${topbar()}
     ${mainView()}
@@ -191,7 +192,9 @@ function topbar() {
       aria-hidden="${state.navOpen ? "false" : "true"}"
       ${state.navOpen ? "" : "inert"}
     >
-      <button class="drawer-close" data-action="close-nav" aria-label="Close menu">x</button>
+      <button class="drawer-close" data-action="close-nav" aria-label="Close menu">
+        <span></span><span></span>
+      </button>
       ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
       <div class="drawer-foot">
         <span class="status-dot"></span>

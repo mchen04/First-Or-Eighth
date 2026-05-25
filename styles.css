@@ -45,9 +45,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body.nav-open {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
+}
+
+#app {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
 }
 
 button,
@@ -188,6 +202,22 @@ select:focus-visible {
   background: var(--text);
 }
 
+.drawer-close span {
+  grid-area: 1 / 1;
+  width: 18px;
+  height: 2px;
+  border-radius: 4px;
+  background: var(--text);
+}
+
+.drawer-close span:first-child {
+  transform: rotate(45deg);
+}
+
+.drawer-close span:last-child {
+  transform: rotate(-45deg);
+}
+
 .mobile-scrim {
   position: fixed;
   inset: 0;
@@ -252,6 +282,7 @@ select:focus-visible {
 
 .page {
   width: min(1400px, 100%);
+  flex: 1 0 auto;
   margin: 0 auto;
   padding: 24px var(--pad) max(48px, env(safe-area-inset-bottom));
 }
@@ -744,8 +775,8 @@ select:focus-visible {
 }
 
 .kv span,
-.detail-section h2,
-.related h2 {
+.detail-section > h2,
+.related > h2 {
   margin: 0 0 10px;
   color: var(--text-mute);
   font-family: var(--mono);
@@ -966,6 +997,7 @@ select:focus-visible {
 .footer {
   justify-content: space-between;
   gap: 14px;
+  margin-top: auto;
   padding: 24px var(--pad) calc(24px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   color: var(--text-mute);
