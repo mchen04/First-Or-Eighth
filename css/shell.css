@@ -19,15 +19,7 @@
 .brand,
 .desktop-nav,
 .topbar-right,
-.online-pill,
-.card-title-row,
-.card-foot,
-.detail-actions,
-.credit-card,
-.creator-head,
-.footer,
-.footer-creators,
-.footer-creators span {
+.online-pill {
   display: flex;
   align-items: center;
 }

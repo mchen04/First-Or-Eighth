@@ -5,12 +5,46 @@
 }
 
 .creator-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
   padding: 20px;
 }
 
 .creator-head {
+  display: flex;
+  align-items: center;
   gap: 13px;
   margin-bottom: 16px;
+}
+
+.creator-head .person-orb {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--person);
+}
+
+.creator-head h2 {
+  margin: 0;
+}
+
+.creator-head p,
+.creator-card p {
+  margin: 3px 0 0;
+  color: var(--text-mute);
+}
+
+.creator-handle {
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.creator-handle:hover {
+  color: var(--text);
 }
 
 .creator-stats {
@@ -77,6 +111,9 @@
 }
 
 .empty-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
   padding: 56px 18px;
   text-align: center;
 }

@@ -59,6 +59,8 @@
 }
 
 .detail-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 24px;
@@ -109,6 +111,9 @@
 }
 
 .kv {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
   padding: 12px 14px;
 }
 
@@ -198,28 +203,32 @@
 }
 
 .credit-card {
+  display: flex;
+  align-items: center;
   gap: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
   padding: 13px 14px;
 }
 
 .person-orb {
   width: 34px;
   height: 34px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--person);
 }
 
-.credit-card h3,
-.creator-head h2 {
+.credit-card h3 {
   margin: 0;
 }
 
-.credit-card p,
-.creator-head p,
-.creator-card p {
+.credit-card p {
   margin: 3px 0 0;
   color: var(--text-mute);
 }
 
-.creator-handle,
 .inline-handle {
   color: var(--text-mute);
   font-family: var(--mono);
@@ -227,7 +236,6 @@
   letter-spacing: 0.08em;
 }
 
-.creator-handle:hover,
 .inline-handle:hover {
   color: var(--text);
 }
