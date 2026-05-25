@@ -15,6 +15,9 @@ function assertImageFormat(body, format, label, file, fail) {
     requireBuffer(body, 24, "PNG header", fail);
     const signature = body.subarray(0, 8).toString("hex");
     if (signature !== "89504e470d0a1a0a") fail(`${label} is not a PNG image: ${file}`);
+    if (body.readUInt32BE(8) !== 13 || body.subarray(12, 16).toString("ascii") !== "IHDR") {
+      fail(`${label} has invalid PNG IHDR metadata: ${file}`);
+    }
     return;
   }
 

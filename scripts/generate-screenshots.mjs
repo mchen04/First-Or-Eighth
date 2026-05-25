@@ -43,6 +43,8 @@ function generateSet(game) {
 function ensureCommand(command, args) {
   const result = spawnSync(command, args, { stdio: "ignore" });
   if (result.error?.code === "ENOENT") fail(`Missing required image tool: ${command}`);
+  if (result.error) fail(`Unable to run required image tool ${command}: ${result.error.message}`);
+  if (result.status !== 0) fail(`Required image tool ${command} failed preflight with status ${result.status}`);
 }
 
 function run(command, args, label) {
