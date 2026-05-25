@@ -1,24 +1,23 @@
 import { readFileSync, statSync } from "node:fs";
+import { creators, games } from "../src/data.mjs";
 
-const required = [
-  "index.html",
+const expectedCssFiles = [
   "styles.css",
   "css/shell.css",
   "css/library.css",
   "css/detail.css",
   "css/creators-about.css",
-  "css/responsive.css",
+  "css/responsive.css"
+];
+
+const screenshotFiles = games.flatMap((game) => game.screenshot ? Object.values(game.screenshot) : []);
+const required = [
+  "index.html",
   "src/app.js",
+  "src/data.mjs",
   "README.md",
-  "assets/shot-valence.png",
-  "assets/shot-valence-card.webp",
-  "assets/shot-valence-detail.webp",
-  "assets/shot-ding.png",
-  "assets/shot-ding-card.webp",
-  "assets/shot-ding-detail.webp",
-  "assets/shot-25-words.png",
-  "assets/shot-25-words-card.webp",
-  "assets/shot-25-words-detail.webp"
+  ...expectedCssFiles,
+  ...screenshotFiles
 ];
 const missing = required.filter((file) => !exists(file));
 
@@ -31,9 +30,12 @@ const js = readFileSync("src/app.js", "utf8");
 const cssFiles = [...html.matchAll(/<link\b[^>]*>/gi)]
   .map(([tag]) => linkStylesheet(tag))
   .filter(Boolean);
-const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
+const data = JSON.stringify({ creators, games });
 
 if (!cssFiles.length) fail("index.html does not link any local stylesheets");
+if (cssFiles.join("\n") !== expectedCssFiles.join("\n")) {
+  fail(`index.html stylesheet order mismatch. Expected: ${expectedCssFiles.join(", ")}; found: ${cssFiles.join(", ")}`);
+}
 
 for (const snippet of ["First or Eighth", "src/app.js", ...cssFiles]) {
   if (!html.includes(snippet)) fail(`index.html does not include ${snippet}`);
@@ -43,27 +45,14 @@ for (const file of cssFiles) {
   if (!exists(file)) fail(`Stylesheet linked from index.html is missing: ${file}`);
 }
 
-for (const url of [
-  "https://ding-game.vercel.app/",
-  "https://valence1.vercel.app/",
-  "https://25-words-or-less.vercel.app/",
-  "https://github.com/mchen04",
-  "https://github.com/jormyy",
-  "https://github.com/matthewh8",
-  "https://github.com/jormyy/ding",
-  "https://github.com/jormyy/valence",
-  "https://github.com/jormyy/pancake",
-  "https://github.com/matthewh8/25-words-or-less"
-]) {
-  if (!js.includes(url)) fail(`src/app.js missing game/source URL ${url}`);
-}
+const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 
 for (const name of ["Jeremy", "Matthew", "Michael", "Ding", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
-  if (!js.includes(name)) fail(`src/app.js missing expected game/creator copy: ${name}`);
+  if (!data.includes(name)) fail(`src/data.mjs missing expected game/creator copy: ${name}`);
 }
 
 for (const copy of ["collaborative poker-ranking", "live sports dashboard", "local same-screen party game"]) {
-  if (!js.includes(copy)) fail(`src/app.js missing GitHub-informed description copy: ${copy}`);
+  if (!data.includes(copy)) fail(`src/data.mjs missing GitHub-informed description copy: ${copy}`);
 }
 
 for (const query of [
@@ -85,7 +74,15 @@ for (const forbidden of ["statsPage", "#/stats", "hero("]) {
 if (!js.includes('sort: "az"')) fail("src/app.js should default to alphabetical sorting");
 
 for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "A few specials with AI doing things"]) {
-  if (!js.includes(snippet)) fail(`src/app.js missing requested builder/about copy: ${snippet}`);
+  if (!(js + data).includes(snippet)) fail(`Source missing requested builder/about copy: ${snippet}`);
+}
+
+for (const game of games) {
+  if (game.url && !game.screenshot) fail(`${game.name} is live but has no screenshot set`);
+  if (!game.screenshot) continue;
+  for (const [type, file] of Object.entries(game.screenshot)) {
+    if (!exists(file)) fail(`${game.name} missing ${type} screenshot asset: ${file}`);
+  }
 }
 
 for (const file of ["assets/thumb-25.svg", "assets/thumb-ding.svg", "assets/thumb-pancake.svg", "assets/thumb-valence.svg"]) {

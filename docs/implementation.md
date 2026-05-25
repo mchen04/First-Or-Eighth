@@ -28,11 +28,12 @@ Review screenshots and temporary browser artifacts are intentionally kept outsid
 
 ## Game Data
 
-Only the user's current games are included. Add more games by appending to the `games` array in `src/app.js`; the listing, filters, builder counts, related games, and footer all derive from that data.
+Only the user's current games are included. Add more games by appending to the `games` array in `src/data.mjs`; the listing, filters, builder counts, related games, footer, and static checks all derive from that data.
 
-- Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding.png`, creator Jeremy, editor Michael.
-- Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence.png`, creator Jeremy, editor Michael.
-- 25 Words or Less: live link, GitHub source, and `assets/shot-25-words.png`, creator Matthew, editor Michael.
+- Live games use a screenshot triplet generated from a common base name: `assets/shot-name-card.webp`, `assets/shot-name-detail.webp`, and `assets/shot-name.png`.
+- Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding*`, creator Jeremy, editor Michael.
+- Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence*`, creator Jeremy, editor Michael.
+- 25 Words or Less: live link, GitHub source, and `assets/shot-25-words*`, creator Matthew, editor Michael.
 - Pancake: WIP with GitHub source, creator Jeremy, editor Michael.
 
 ## Verification Targets

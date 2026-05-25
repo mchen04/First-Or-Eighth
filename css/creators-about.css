@@ -97,9 +97,9 @@
   text-transform: uppercase;
 }
 
-.inline-wip {
+.creator-games .inline-wip {
   margin-left: 8px;
-  color: var(--warn) !important;
+  color: var(--warn);
 }
 
 .about-page {

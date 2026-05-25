@@ -3,4 +3,3 @@ node_modules/
 dist/
 .vercel/
 *.log
-criticality-loop.log.md
