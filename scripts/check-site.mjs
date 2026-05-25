@@ -80,9 +80,7 @@ for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "
 for (const game of games) {
   if (game.url && !game.screenshot) fail(`${game.name} is live but has no screenshot set`);
   if (!game.screenshot) continue;
-  for (const [type, file] of Object.entries(game.screenshot)) {
-    if (!exists(file)) fail(`${game.name} missing ${type} screenshot asset: ${file}`);
-  }
+  verifyScreenshotSet(game);
 }
 
 for (const file of ["assets/thumb-25.svg", "assets/thumb-ding.svg", "assets/thumb-pancake.svg", "assets/thumb-valence.svg"]) {
@@ -98,6 +96,71 @@ function exists(path) {
   } catch {
     return false;
   }
+}
+
+function verifyScreenshotSet(game) {
+  const expected = {
+    card: { suffix: "-card.webp", format: "webp", width: 640, height: 400 },
+    detail: { suffix: "-detail.webp", format: "webp", width: 1200, height: 750 },
+    fallback: { suffix: ".png", format: "png", width: 1440, height: 900 }
+  };
+  const base = game.screenshot.fallback.replace(/\.png$/, "");
+
+  for (const [kind, contract] of Object.entries(expected)) {
+    const file = game.screenshot[kind];
+    if (!file) fail(`${game.name} screenshot set missing ${kind}`);
+    if (file !== `${base}${contract.suffix}`) fail(`${game.name} ${kind} screenshot must use ${contract.suffix}: ${file}`);
+    assertImage(file, contract, `${game.name} ${kind}`);
+  }
+}
+
+function assertImage(file, contract, label) {
+  const body = readFileSync(file);
+  assertImageFormat(body, contract.format, label, file);
+  const { width, height } = imageSize(body, file);
+  if (width !== contract.width || height !== contract.height) {
+    fail(`${label} has ${width}x${height}; expected ${contract.width}x${contract.height}: ${file}`);
+  }
+}
+
+function assertImageFormat(body, format, label, file) {
+  if (format === "png") {
+    const signature = body.subarray(0, 8).toString("hex");
+    if (signature !== "89504e470d0a1a0a") fail(`${label} is not a PNG image: ${file}`);
+    return;
+  }
+  if (format === "webp") {
+    if (body.subarray(0, 4).toString("ascii") !== "RIFF" || body.subarray(8, 12).toString("ascii") !== "WEBP") {
+      fail(`${label} is not a WebP image: ${file}`);
+    }
+    return;
+  }
+  fail(`Unsupported image format contract for ${label}: ${format}`);
+}
+
+function imageSize(body, file) {
+  if (file.endsWith(".png")) {
+    return {
+      width: body.readUInt32BE(16),
+      height: body.readUInt32BE(20)
+    };
+  }
+  if (file.endsWith(".webp")) {
+    const chunk = body.subarray(12, 16).toString("ascii");
+    if (chunk === "VP8X") {
+      return {
+        width: body.readUIntLE(24, 3) + 1,
+        height: body.readUIntLE(27, 3) + 1
+      };
+    }
+    if (chunk === "VP8 ") {
+      return {
+        width: body.readUInt16LE(26) & 0x3fff,
+        height: body.readUInt16LE(28) & 0x3fff
+      };
+    }
+  }
+  fail(`Unsupported image format for size check: ${file}`);
 }
 
 function linkStylesheet(tag) {

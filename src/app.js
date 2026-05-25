@@ -25,6 +25,7 @@ document.addEventListener("click", (event) => {
   const type = action.dataset.action;
   if (type === "toggle-nav") setNavOpen(!state.navOpen);
   if (type === "close-nav") setNavOpen(false);
+  if (type === "nav-link") setNavOpen(false);
   if (type === "set-genre") state.genre = action.dataset.genre;
   if (type === "open-game") location.hash = `#/game/${action.dataset.game}`;
   if (type === "copy-link") {
@@ -127,7 +128,7 @@ function topbar() {
       <button class="drawer-close" data-action="close-nav" aria-label="Close menu">
         <span></span><span></span>
       </button>
-      ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
+      ${links.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
       <div class="drawer-foot">
         <span class="status-dot"></span>
         ${games.length} ${games.length === 1 ? "game" : "games"} in rotation
@@ -136,9 +137,9 @@ function topbar() {
   `;
 }
 
-function navLink(id, label, href) {
+function navLink(id, label, href, action = "") {
   const active = (id === "home" && state.route.name === "home") || id === state.route.name;
-  return `<a class="${active ? "is-active" : ""}" href="${href}" data-nav-link>${label}</a>`;
+  return `<a class="${active ? "is-active" : ""}" href="${href}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
 }
 
 function mainView() {
@@ -385,10 +386,11 @@ function thumb(game, big = false) {
 
 function screenshotImage(game, image, big) {
   const sizes = big ? "(max-width: 840px) 100vw, 52vw" : "(max-width: 520px) 100vw, 360px";
+  const priority = big ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
   return `
     <picture>
       <source type="image/webp" srcset="${escapeAttr(image.card)} 640w, ${escapeAttr(image.detail)} 1200w" sizes="${sizes}" />
-      <img src="${escapeAttr(image.fallback)}" width="1440" height="900" alt="${escapeAttr(`${game.name} screenshot`)}" loading="lazy" />
+      <img src="${escapeAttr(image.fallback)}" width="1440" height="900" alt="${escapeAttr(`${game.name} screenshot`)}" ${priority} />
     </picture>
   `;
 }
