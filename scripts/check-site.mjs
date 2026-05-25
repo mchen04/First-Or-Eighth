@@ -65,10 +65,10 @@ for (const query of [
   ".mobile-drawer",
   ".related > h2"
 ]) {
-  if (!css.includes(query)) fail(`styles.css missing responsive rule ${query}`);
+  if (!css.includes(query)) fail(`Linked stylesheet set missing responsive rule ${query}`);
 }
 
-if (css.includes(".related h2")) fail("styles.css must not style related card titles as section headings");
+if (css.includes(".related h2")) fail("Linked stylesheet set must not style related card titles as section headings");
 
 for (const forbidden of ["statsPage", "#/stats", "hero("]) {
   if (js.includes(forbidden)) fail(`src/app.js still includes removed design element: ${forbidden}`);

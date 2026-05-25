@@ -10,7 +10,6 @@
 }
 
 @media (max-width: 840px) {
-  .library-head,
   .detail-hero {
     grid-template-columns: 1fr;
   }

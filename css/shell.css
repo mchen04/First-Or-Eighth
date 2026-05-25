@@ -82,16 +82,6 @@
   white-space: nowrap;
 }
 
-.online-pill span,
-.status-dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--accent-2);
-  box-shadow: 0 0 14px var(--accent-2);
-}
-
 .icon-button,
 .drawer-close {
   display: none;

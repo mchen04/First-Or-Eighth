@@ -143,7 +143,7 @@ function topbar() {
         ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
-        <span class="online-pill" title="${onlineCount()} live playable games"><span></span>${onlineCount()} online</span>
+        <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
         <button class="icon-button" data-action="toggle-nav" aria-label="Open menu" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
