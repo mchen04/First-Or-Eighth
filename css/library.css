@@ -330,14 +330,6 @@
   font-size: 12px;
 }
 
-.person-pill > span {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--person);
-}
-
 .person-pill small {
   color: var(--text-faint);
 }

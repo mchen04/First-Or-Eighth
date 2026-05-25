@@ -445,7 +445,7 @@ function personPill(id, editorCount = 0) {
   const person = creators[id];
   return `
     <span class="person-pill">
-      <span style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
       ${escapeHtml(person.name)}${editorCount ? ` <small>+${editorCount}</small>` : ""}
     </span>
   `;
@@ -496,7 +496,7 @@ function footer() {
       <span>FIRST_OR_EIGHTH</span>
       <span class="footer-creators">
         ${sortedCreators().map(([, creator]) => `
-          <span><span style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
+          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
         `).join("")}
       </span>
       <span>No ads / no tracking / no coins</span>

@@ -15,7 +15,7 @@ The hub is implemented as a dependency-light static site at the repository root.
 - Games are listed alphabetically by default.
 - Builders are listed alphabetically and their handles link to GitHub profiles.
 - The topbar online count is derived from live playable games instead of being hardcoded.
-- Sticky top navigation with desktop links and a mobile drawer.
+- Fixed top navigation with desktop links and a mobile drawer.
 - Responsive search, genre chips, sort control, card grid, game detail views, builder credits, and about page.
 - Stats route removed per the final design instruction.
 - Small phone portrait: 320 x 568

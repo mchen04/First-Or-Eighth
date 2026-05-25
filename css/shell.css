@@ -221,16 +221,8 @@
   flex-wrap: wrap;
 }
 
-.footer-creators span {
+.footer-person {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.footer-creators span span {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--person);
 }
