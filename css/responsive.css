@@ -56,14 +56,6 @@
 }
 
 @media (max-width: 520px) {
-  :root {
-    --topbar-height: 62px;
-  }
-
-  .topbar {
-    min-height: 62px;
-  }
-
   .brand {
     letter-spacing: 0.08em;
   }
@@ -115,11 +107,10 @@
 @media (orientation: landscape) and (max-height: 500px) {
   :root {
     --pad: clamp(14px, 3vw, 24px);
-    --topbar-height: 56px;
+    --topbar-height: 60px;
   }
 
   .topbar {
-    min-height: 56px;
     padding-top: calc(8px + env(safe-area-inset-top, 0px));
     padding-bottom: 8px;
   }

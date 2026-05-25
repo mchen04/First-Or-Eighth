@@ -2,7 +2,7 @@
 
 ## Scope
 
-The hub is implemented as a dependency-light static site at the repository root. Global tokens stay in `styles.css`; page, shell, card, detail, creator, footer, and responsive rules are split into focused files under `css/`.
+The hub is implemented as a dependency-light static site at the repository root. Global tokens stay in `styles.css`; shell, library/card, detail, creator/about, and responsive rules are split into focused files under `css/`.
 
 ## Relevant Design Aspects Implemented
 

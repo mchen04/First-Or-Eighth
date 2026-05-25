@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 68px;
+  min-height: var(--topbar-offset);
   padding: calc(12px + env(safe-area-inset-top, 0px)) var(--pad) 12px;
   border-bottom: 1px solid var(--border);
   background: rgba(10, 11, 20, 0.76);

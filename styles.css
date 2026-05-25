@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
   --topbar-height: 68px;
+  --topbar-offset: calc(var(--topbar-height) + env(safe-area-inset-top, 0px));
   --bg: #0a0b14;
   --bg-elev: rgba(255, 255, 255, 0.035);
   --bg-elev-2: rgba(255, 255, 255, 0.065);
@@ -64,7 +65,7 @@ a {
   min-height: 100vh;
   min-height: 100dvh;
   flex-direction: column;
-  padding-top: var(--topbar-height);
+  padding-top: var(--topbar-offset);
 }
 
 button,

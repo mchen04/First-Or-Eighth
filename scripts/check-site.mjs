@@ -7,7 +7,7 @@ const required = [
   "css/library.css",
   "css/detail.css",
   "css/creators-about.css",
-  "css/footer-responsive.css",
+  "css/responsive.css",
   "src/app.js",
   "README.md",
   "assets/shot-valence.png",
@@ -22,18 +22,15 @@ if (missing.length) {
 
 const html = readFileSync("index.html", "utf8");
 const js = readFileSync("src/app.js", "utf8");
-const cssFiles = [
-  "styles.css",
-  "css/shell.css",
-  "css/library.css",
-  "css/detail.css",
-  "css/creators-about.css",
-  "css/footer-responsive.css"
-];
+const cssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+\.css)" \/>/g)].map(([, file]) => file);
 const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 
-for (const snippet of ["First or Eighth", "src/app.js", "styles.css"]) {
+for (const snippet of ["First or Eighth", "src/app.js", ...cssFiles]) {
   if (!html.includes(snippet)) fail(`index.html does not include ${snippet}`);
+}
+
+for (const file of cssFiles) {
+  if (!exists(file)) fail(`Stylesheet linked from index.html is missing: ${file}`);
 }
 
 for (const url of [
