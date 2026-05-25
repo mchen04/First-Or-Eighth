@@ -47,7 +47,7 @@ export const games = [
     sourceUrl: "https://github.com/jormyy/ding",
     creator: "jeremy",
     editors: ["michael"],
-    genre: "Poker",
+    genre: "Arcade",
     year: "2026",
     accent: "#ff3d7f",
     screenshot: screenshotSet("assets/shot-ding"),
@@ -63,13 +63,29 @@ export const games = [
     sourceUrl: "https://github.com/matthewh8/25-words-or-less",
     creator: "matthew",
     editors: ["michael"],
-    genre: "Party",
+    genre: "Arcade",
     year: "2026",
     accent: "#9b5de5",
     screenshot: screenshotSet("assets/shot-25-words"),
     tagline: "Build teams, pick a mode, and clue under pressure.",
     description:
       "25 Words or Less is a local same-screen party game with team setup, multiple rule presets, challenge toggles, timers, and large word banks split across green, yellow, red, and money decks."
+  },
+  {
+    id: "heardle",
+    name: "Heardle",
+    status: "Live",
+    url: "https://heardle67.vercel.app",
+    sourceUrl: "https://github.com/jormyy/heardle",
+    creator: "jeremy",
+    editors: [],
+    genre: "Arcade",
+    year: "2026",
+    accent: "#1db954",
+    screenshot: screenshotSet("assets/shot-heardle"),
+    tagline: "Pick a theme. Guess the track. Six clips to get it right.",
+    description:
+      "Heardle is a music guessing game where players identify a song from progressively longer audio clips. Choose an artist, genre, or decade, then work through up to six attempts as the snippet grows from one second to sixteen. Backed by the Deezer catalog with popularity filtering and type-ahead search."
   },
   {
     id: "pancake",
