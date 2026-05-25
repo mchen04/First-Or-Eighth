@@ -10,6 +10,13 @@ const state = {
 };
 
 const app = document.querySelector("#app");
+const desktopNav = window.matchMedia("(min-width: 961px)");
+
+desktopNav.addEventListener("change", () => {
+  if (!desktopNav.matches || !state.navOpen) return;
+  setNavOpen(false);
+  render();
+});
 
 window.addEventListener("hashchange", () => {
   state.route = readRoute();
@@ -128,7 +135,7 @@ function topbar() {
 
   return `
     <header class="topbar">
-      <a class="brand" href="#/" aria-label="First or Eighth home" data-nav-link>
+      <a class="brand" href="#/" aria-label="First or Eighth home">
         <span class="brand-mark" aria-hidden="true"></span>
         <span>FIRST_OR_EIGHTH</span>
       </a>
@@ -282,7 +289,7 @@ function gameDetail(game) {
           ${thumb(game, true)}
         </div>
         <div class="detail-copy">
-          <p class="eyebrow ${isWip ? "is-wip" : ""}">${isWip ? "Work in progress" : `${game.genre} / ${game.year}`}</p>
+          <p class="eyebrow ${isWip ? "is-wip" : ""}">${gameEyebrow(game, isWip)}</p>
           <h1>${escapeHtml(game.name)}.</h1>
           <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
           <div class="detail-actions">
@@ -417,6 +424,11 @@ function screenshotImage(game, image, big) {
       <img src="${escapeAttr(image.fallback)}" width="1440" height="900" alt="${escapeAttr(`${game.name} screenshot`)}" ${priority} />
     </picture>
   `;
+}
+
+function gameEyebrow(game, isWip) {
+  if (isWip) return "Work in progress";
+  return `${escapeHtml(game.genre)} / ${escapeHtml(game.year)}`;
 }
 
 function playButton(game, label) {

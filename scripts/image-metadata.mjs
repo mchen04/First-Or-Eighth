@@ -49,6 +49,13 @@ function imageSize(body, file, fail) {
         height: body.readUInt16LE(28) & 0x3fff
       };
     }
+    if (chunk === "VP8L") {
+      const bits = body.readUInt32LE(21);
+      return {
+        width: (bits & 0x3fff) + 1,
+        height: ((bits >> 14) & 0x3fff) + 1
+      };
+    }
   }
 
   fail(`Unsupported image format for size check: ${file}`);

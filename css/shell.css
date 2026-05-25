@@ -170,6 +170,15 @@
   display: block;
 }
 
+@media (min-width: 961px) {
+  .mobile-scrim,
+  .mobile-scrim.is-open,
+  .mobile-drawer,
+  .mobile-drawer.is-open {
+    display: none;
+  }
+}
+
 .drawer-close {
   display: grid;
   margin-left: auto;
