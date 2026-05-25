@@ -6,12 +6,12 @@ The hub is implemented as a dependency-light static site at the repository root.
 
 ## Relevant Design Aspects Implemented
 
-- Neon dark game shelf from the selected Claude Design direction.
+- Neon dark game shelf with compact, equal-weight game cards.
 - Equal-weight game cards with no featured hero.
 - Live games use screenshot captures; Pancake uses an in-CSS striped WIP placeholder with no title initials or letter icons.
 - Pancake shown as work in progress with a WIP badge, disabled play action, and striped thumbnail treatment.
 - Cards and detail pages expose Play links for live Vercel deployments and GitHub links for source.
-- Live game descriptions are based on their GitHub READMEs/source, and thumbnails use fresh screenshots from the deployed sites.
+- Live game descriptions are based on their GitHub READMEs/source, and thumbnails use fresh screenshots from the deployed sites with responsive WebP variants.
 - Games are listed alphabetically by default.
 - Builders are listed alphabetically and their handles link to GitHub profiles.
 - The topbar online count is derived from live playable games instead of being hardcoded.

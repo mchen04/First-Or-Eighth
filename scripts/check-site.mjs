@@ -11,8 +11,14 @@ const required = [
   "src/app.js",
   "README.md",
   "assets/shot-valence.png",
+  "assets/shot-valence-card.webp",
+  "assets/shot-valence-detail.webp",
   "assets/shot-ding.png",
-  "assets/shot-25-words.png"
+  "assets/shot-ding-card.webp",
+  "assets/shot-ding-detail.webp",
+  "assets/shot-25-words.png",
+  "assets/shot-25-words-card.webp",
+  "assets/shot-25-words-detail.webp"
 ];
 const missing = required.filter((file) => !exists(file));
 
@@ -22,8 +28,12 @@ if (missing.length) {
 
 const html = readFileSync("index.html", "utf8");
 const js = readFileSync("src/app.js", "utf8");
-const cssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+\.css)" \/>/g)].map(([, file]) => file);
+const cssFiles = [...html.matchAll(/<link\b[^>]*>/gi)]
+  .map(([tag]) => linkStylesheet(tag))
+  .filter(Boolean);
 const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
+
+if (!cssFiles.length) fail("index.html does not link any local stylesheets");
 
 for (const snippet of ["First or Eighth", "src/app.js", ...cssFiles]) {
   if (!html.includes(snippet)) fail(`index.html does not include ${snippet}`);
@@ -91,6 +101,18 @@ function exists(path) {
   } catch {
     return false;
   }
+}
+
+function linkStylesheet(tag) {
+  const rel = attr(tag, "rel");
+  const href = attr(tag, "href");
+  if (!rel || !href) return "";
+  if (!rel.split(/\s+/).includes("stylesheet")) return "";
+  return href.endsWith(".css") ? href : "";
+}
+
+function attr(tag, name) {
+  return tag.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"))?.[1] || "";
 }
 
 function fail(message) {
