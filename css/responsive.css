@@ -3,3 +3,14 @@
     --pad: clamp(14px, 3vw, 24px);
   }
 }
+
+@media (max-width: 520px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
