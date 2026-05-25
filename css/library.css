@@ -138,9 +138,6 @@
 }
 
 .game-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-elev);
   position: relative;
   overflow: hidden;
   min-width: 0;
@@ -369,9 +366,6 @@
 }
 
 .empty-state {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-elev);
   padding: 56px 18px;
   text-align: center;
 }

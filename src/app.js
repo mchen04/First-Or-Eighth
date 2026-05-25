@@ -252,7 +252,7 @@ function option(value, label) {
 
 function gameCard(game) {
   return `
-    <article class="game-card" style="--accent:${escapeAttr(game.accent)}">
+    <article class="game-card surface" style="--accent:${escapeAttr(game.accent)}">
       ${game.status === "WIP" ? wipBadge() : ""}
       <button class="card-open" data-action="open-game" data-game="${game.id}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
@@ -298,9 +298,9 @@ function gameDetail(game) {
             <button class="button button-secondary" data-action="copy-link">Copy page link</button>
           </div>
           <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
-            <div class="kv"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
-            <div class="kv"><span>Year</span><strong>${escapeHtml(game.year)}</strong></div>
-            <div class="kv"><span>Status</span><strong>${escapeHtml(game.status)}</strong></div>
+            <div class="kv surface"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
+            <div class="kv surface"><span>Year</span><strong>${escapeHtml(game.year)}</strong></div>
+            <div class="kv surface"><span>Status</span><strong>${escapeHtml(game.status)}</strong></div>
           </div>
         </div>
       </section>
@@ -353,7 +353,7 @@ function creatorsPage() {
           const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
 
           return `
-            <article class="creator-card">
+            <article class="creator-card surface">
               <div class="creator-head">
                 <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
                 <div>
@@ -432,7 +432,7 @@ function gameEyebrow(game, isWip) {
 }
 
 function playButton(game, label) {
-  if (!game.url) return `<button class="button is-disabled" disabled>${label}</button>`;
+  if (!game.url) return `<button class="button is-disabled" disabled>${escapeHtml(label)}</button>`;
   return `<a class="button" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
 }
 
@@ -454,7 +454,7 @@ function personPill(id, editorCount = 0) {
 function creditCard(id, role) {
   const person = creators[id];
   return `
-    <article class="credit-card">
+    <article class="credit-card surface">
       <span class="person-orb" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
       <div>
         <h3>${escapeHtml(person.name)}</h3>
@@ -470,7 +470,7 @@ function wipBadge() {
 
 function emptyState() {
   return `
-    <section class="empty-state">
+    <section class="empty-state surface">
       <h2>Nothing here.</h2>
       <p>Try a different search or clear the filters.</p>
     </section>

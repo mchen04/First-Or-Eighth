@@ -36,27 +36,41 @@ function imageSize(body, file, fail) {
   }
 
   if (file.endsWith(".webp")) {
-    const chunk = body.subarray(12, 16).toString("ascii");
+    return webpSize(body, fail);
+  }
+
+  fail(`Unsupported image format for size check: ${file}`);
+}
+
+function webpSize(body, fail) {
+  let offset = 12;
+  while (offset + 8 <= body.length) {
+    const chunk = body.subarray(offset, offset + 4).toString("ascii");
+    const size = body.readUInt32LE(offset + 4);
+    const data = offset + 8;
+
     if (chunk === "VP8X") {
       return {
-        width: body.readUIntLE(24, 3) + 1,
-        height: body.readUIntLE(27, 3) + 1
+        width: body.readUIntLE(data + 4, 3) + 1,
+        height: body.readUIntLE(data + 7, 3) + 1
       };
     }
     if (chunk === "VP8 ") {
       return {
-        width: body.readUInt16LE(26) & 0x3fff,
-        height: body.readUInt16LE(28) & 0x3fff
+        width: body.readUInt16LE(data + 6) & 0x3fff,
+        height: body.readUInt16LE(data + 8) & 0x3fff
       };
     }
     if (chunk === "VP8L") {
-      const bits = body.readUInt32LE(21);
+      const bits = body.readUInt32LE(data + 1);
       return {
         width: (bits & 0x3fff) + 1,
         height: ((bits >> 14) & 0x3fff) + 1
       };
     }
+
+    offset = data + size + (size % 2);
   }
 
-  fail(`Unsupported image format for size check: ${file}`);
+  fail("Unsupported WebP: no image-size chunk found");
 }

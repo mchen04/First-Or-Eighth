@@ -22,3 +22,9 @@
   background: var(--accent-2);
   box-shadow: 0 0 14px var(--accent-2);
 }
+
+.surface {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+}

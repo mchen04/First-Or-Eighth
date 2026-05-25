@@ -34,6 +34,7 @@ const cssFiles = [...html.matchAll(/<link\b[^>]*>/gi)]
   .map(([tag]) => linkStylesheet(tag))
   .filter(Boolean);
 const data = JSON.stringify({ creators, games });
+validateData();
 
 if (!cssFiles.length) fail("index.html does not link any local stylesheets");
 if (cssFiles.join("\n") !== expectedCssFiles.join("\n")) {
@@ -115,6 +116,45 @@ function verifyScreenshotSet(game) {
     if (file !== `${base}${contract.suffix}`) fail(`${game.name} ${kind} screenshot must use ${contract.suffix}: ${file}`);
     assertImage(file, contract, `${game.name} ${kind}`);
   }
+}
+
+function validateData() {
+  const creatorIds = new Set(Object.keys(creators));
+  const gameIds = new Set();
+
+  for (const [id, creator] of Object.entries(creators)) {
+    if (!creator.name || !creator.githubUrl || !creator.color) fail(`Creator ${id} is missing required fields`);
+    if (!isUrl(creator.githubUrl)) fail(`Creator ${id} has invalid GitHub URL: ${creator.githubUrl}`);
+    if (!isHexColor(creator.color)) fail(`Creator ${id} has invalid color: ${creator.color}`);
+  }
+
+  for (const game of games) {
+    if (!game.id || gameIds.has(game.id)) fail(`Duplicate or missing game id: ${game.id}`);
+    gameIds.add(game.id);
+    if (!["Live", "WIP"].includes(game.status)) fail(`${game.name} has unknown status: ${game.status}`);
+    if (!creatorIds.has(game.creator)) fail(`${game.name} references unknown creator: ${game.creator}`);
+    for (const editor of game.editors) {
+      if (!creatorIds.has(editor)) fail(`${game.name} references unknown editor: ${editor}`);
+    }
+    if (!game.name || !game.genre || !game.year || !game.sourceUrl || !game.tagline || !game.description) {
+      fail(`${game.id} is missing required game metadata`);
+    }
+    if (!isHexColor(game.accent)) fail(`${game.name} has invalid accent: ${game.accent}`);
+    if (game.url && !isUrl(game.url)) fail(`${game.name} has invalid play URL: ${game.url}`);
+    if (!isUrl(game.sourceUrl)) fail(`${game.name} has invalid source URL: ${game.sourceUrl}`);
+    if (game.status === "Live" && !game.url) fail(`${game.name} is live but has no play URL`);
+    if (game.screenshot && !["card", "detail", "fallback"].every((key) => typeof game.screenshot[key] === "string")) {
+      fail(`${game.name} has incomplete screenshot metadata`);
+    }
+  }
+}
+
+function isUrl(value) {
+  return /^https:\/\/\S+$/.test(value);
+}
+
+function isHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(value);
 }
 
 function assertImage(file, contract, label) {
