@@ -93,14 +93,15 @@ const state = {
   query: "",
   genre: "All",
   sort: "az",
-  navOpen: false
+  navOpen: false,
+  navScrollY: 0
 };
 
 const app = document.querySelector("#app");
 
 window.addEventListener("hashchange", () => {
   state.route = readRoute();
-  state.navOpen = false;
+  setNavOpen(false, { restoreScroll: false });
   render();
   window.scrollTo({ top: 0, behavior: "auto" });
 });
@@ -110,8 +111,8 @@ document.addEventListener("click", (event) => {
   if (!action) return;
 
   const type = action.dataset.action;
-  if (type === "toggle-nav") state.navOpen = !state.navOpen;
-  if (type === "close-nav") state.navOpen = false;
+  if (type === "toggle-nav") setNavOpen(!state.navOpen);
+  if (type === "close-nav") setNavOpen(false);
   if (type === "set-genre") state.genre = action.dataset.genre;
   if (type === "open-game") location.hash = `#/game/${action.dataset.game}`;
   if (type === "copy-link") {
@@ -138,7 +139,7 @@ document.addEventListener("input", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape" || !state.navOpen) return;
-  state.navOpen = false;
+  setNavOpen(false);
   render();
 });
 
@@ -154,12 +155,31 @@ function readRoute() {
 }
 
 function render() {
-  document.body.classList.toggle("nav-open", state.navOpen);
   app.innerHTML = `
     ${topbar()}
     ${mainView()}
     ${footer()}
   `;
+}
+
+function setNavOpen(open, { restoreScroll = true } = {}) {
+  if (state.navOpen === open) return;
+
+  if (open) {
+    state.navScrollY = window.scrollY;
+    document.body.style.top = `-${state.navScrollY}px`;
+    document.body.classList.add("nav-open");
+    state.navOpen = true;
+    return;
+  }
+
+  state.navOpen = false;
+  document.body.classList.remove("nav-open");
+  document.body.style.top = "";
+
+  if (restoreScroll) {
+    window.scrollTo({ top: state.navScrollY, behavior: "auto" });
+  }
 }
 
 function topbar() {
