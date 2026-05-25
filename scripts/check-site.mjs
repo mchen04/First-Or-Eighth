@@ -131,6 +131,7 @@ function validateData() {
   for (const game of games) {
     if (!game.id || gameIds.has(game.id)) fail(`Duplicate or missing game id: ${game.id}`);
     gameIds.add(game.id);
+    if (!Array.isArray(game.editors)) fail(`${game.name || game.id} editors must be an array`);
     if (!["Live", "WIP"].includes(game.status)) fail(`${game.name} has unknown status: ${game.status}`);
     if (!creatorIds.has(game.creator)) fail(`${game.name} references unknown creator: ${game.creator}`);
     for (const editor of game.editors) {

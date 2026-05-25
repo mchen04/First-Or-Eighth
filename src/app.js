@@ -11,6 +11,7 @@ const state = {
 
 const app = document.querySelector("#app");
 const desktopNav = window.matchMedia("(min-width: 961px)");
+let shellRendered = false;
 
 desktopNav.addEventListener("change", () => {
   if (!desktopNav.matches || !state.navOpen) return;
@@ -35,14 +36,14 @@ document.addEventListener("click", (event) => {
 document.addEventListener("input", (event) => {
   if (event.target.matches("[data-search]")) {
     state.query = event.target.value;
-    render();
+    renderMain();
     restoreSearchFocus();
     return;
   }
 
   if (event.target.matches("[data-sort]")) {
     state.sort = event.target.value;
-    render();
+    renderMain();
   }
 });
 
@@ -64,11 +65,38 @@ function readRoute() {
 }
 
 function render() {
+  if (!shellRendered) renderShell();
+  renderShellState();
+  renderMain();
+}
+
+function renderShell() {
   app.innerHTML = `
     ${topbar()}
-    ${mainView()}
+    <div id="view-root"></div>
     ${footer()}
   `;
+  shellRendered = true;
+}
+
+function renderMain() {
+  document.querySelector("#view-root").innerHTML = mainView();
+}
+
+function renderShellState() {
+  document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
+  document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
+  const drawer = document.querySelector(".mobile-drawer");
+  if (drawer) {
+    drawer.classList.toggle("is-open", state.navOpen);
+    drawer.setAttribute("aria-hidden", String(!state.navOpen));
+    if (state.navOpen) drawer.removeAttribute("inert");
+    else drawer.setAttribute("inert", "");
+  }
+
+  for (const link of document.querySelectorAll("[data-route]")) {
+    link.classList.toggle("is-active", link.dataset.route === routeId());
+  }
 }
 
 function setNavOpen(open, { restoreScroll = true } = {}) {
@@ -105,8 +133,6 @@ function handleAction(action) {
     case "set-genre":
       state.genre = action.dataset.genre;
       return true;
-    case "open-game":
-      return setHash(`#/game/${action.dataset.game}`);
     case "copy-link":
       copyCurrentLink(action);
       return false;
@@ -115,15 +141,13 @@ function handleAction(action) {
   }
 }
 
-function setHash(hash) {
-  if (location.hash === hash) return true;
-  location.hash = hash;
-  return false;
-}
-
 function routeHref() {
   if (state.route.name === "home") return "#/";
   return `#/${state.route.name}`;
+}
+
+function routeId() {
+  return state.route.name === "home" ? "home" : state.route.name;
 }
 
 function topbar() {
@@ -170,7 +194,7 @@ function topbar() {
 
 function navLink(id, label, href, action = "") {
   const active = (id === "home" && state.route.name === "home") || id === state.route.name;
-  return `<a class="${active ? "is-active" : ""}" href="${href}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
+  return `<a class="${active ? "is-active" : ""}" href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
 }
 
 function mainView() {
@@ -254,9 +278,9 @@ function gameCard(game) {
   return `
     <article class="game-card surface" style="--accent:${escapeAttr(game.accent)}">
       ${game.status === "WIP" ? wipBadge() : ""}
-      <button class="card-open" data-action="open-game" data-game="${game.id}" aria-label="Open ${escapeAttr(game.name)} details">
+      <a class="card-open" href="#/game/${escapeAttr(game.id)}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
-      </button>
+      </a>
       <div class="card-body">
         <div class="card-title-row">
           <h2>${escapeHtml(game.name)}</h2>
@@ -369,10 +393,10 @@ function creatorsPage() {
               ${listed.length ? `
                 <div class="creator-games">
                   ${listed.map((game) => `
-                    <button data-action="open-game" data-game="${game.id}">
+                    <a href="#/game/${escapeAttr(game.id)}">
                       <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
                       <small>${game.creator === id ? "Creator" : "Editor"}</small>
-                    </button>
+                    </a>
                   `).join("")}
                 </div>
               ` : ""}

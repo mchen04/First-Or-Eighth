@@ -84,7 +84,6 @@
 @media (orientation: landscape) and (max-height: 500px) {
   :root {
     --pad: clamp(14px, 3vw, 24px);
-    --topbar-height: 60px;
   }
 
   .topbar {

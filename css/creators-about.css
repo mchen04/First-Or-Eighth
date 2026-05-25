@@ -63,7 +63,7 @@
   gap: 2px;
 }
 
-.creator-games button {
+.creator-games a {
   display: grid;
   width: 100%;
   min-height: 46px;
@@ -74,7 +74,6 @@
   border: 0;
   border-bottom: 1px solid var(--border);
   background: transparent;
-  cursor: pointer;
   text-align: left;
 }
 

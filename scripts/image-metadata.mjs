@@ -50,18 +50,21 @@ function webpSize(body, fail) {
     const data = offset + 8;
 
     if (chunk === "VP8X") {
+      requireBytes(size, 10, "VP8X", fail);
       return {
         width: body.readUIntLE(data + 4, 3) + 1,
         height: body.readUIntLE(data + 7, 3) + 1
       };
     }
     if (chunk === "VP8 ") {
+      requireBytes(size, 10, "VP8", fail);
       return {
         width: body.readUInt16LE(data + 6) & 0x3fff,
         height: body.readUInt16LE(data + 8) & 0x3fff
       };
     }
     if (chunk === "VP8L") {
+      requireBytes(size, 5, "VP8L", fail);
       const bits = body.readUInt32LE(data + 1);
       return {
         width: (bits & 0x3fff) + 1,
@@ -73,4 +76,8 @@ function webpSize(body, fail) {
   }
 
   fail("Unsupported WebP: no image-size chunk found");
+}
+
+function requireBytes(actual, minimum, chunk, fail) {
+  if (actual < minimum) fail(`Truncated WebP ${chunk} chunk: expected at least ${minimum} bytes, found ${actual}`);
 }
