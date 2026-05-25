@@ -5,6 +5,7 @@
   "description": "First or Eighth game hub.",
   "scripts": {
     "dev": "python3 -m http.server 5173",
+    "assets": "node scripts/generate-screenshots.mjs",
     "check": "node scripts/check-site.mjs"
   },
   "keywords": [

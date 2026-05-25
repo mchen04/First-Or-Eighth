@@ -15,7 +15,7 @@ The hub is implemented as a dependency-light static site at the repository root.
 - Games are listed alphabetically by default.
 - Builders are listed alphabetically and their handles link to GitHub profiles.
 - The topbar online count is derived from live playable games instead of being hardcoded.
-- Fixed top navigation with desktop links and a mobile drawer.
+- Sticky top navigation with desktop links and a modal mobile drawer.
 - Responsive search, genre chips, sort control, card grid, game detail views, builder credits, and about page.
 - Stats route removed per the final design instruction.
 - Small phone portrait: 320 x 568
@@ -31,6 +31,7 @@ Review screenshots and temporary browser artifacts are intentionally kept outsid
 Only the user's current games are included. Add more games by appending to the `games` array in `src/data.mjs`; the listing, filters, builder counts, related games, footer, and static checks all derive from that data.
 
 - Live games use a screenshot triplet generated from a common base name: `assets/shot-name-card.webp`, `assets/shot-name-detail.webp`, and `assets/shot-name.png`.
+- Run `npm run assets` after replacing a `1440 x 900` fallback PNG to regenerate the `640 x 400` card WebP and `1200 x 750` detail WebP.
 - Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding*`, creator Jeremy, editor Michael.
 - Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence*`, creator Jeremy, editor Michael.
 - 25 Words or Less: live link, GitHub source, and `assets/shot-25-words*`, creator Matthew, editor Michael.

@@ -12,6 +12,9 @@ const state = {
 const app = document.querySelector("#app");
 const desktopNav = window.matchMedia("(min-width: 961px)");
 let shellRendered = false;
+let navReturnFocus = null;
+let shouldFocusDrawer = false;
+let shouldRestoreNavFocus = false;
 
 desktopNav.addEventListener("change", () => {
   if (!desktopNav.matches || !state.navOpen) return;
@@ -48,6 +51,11 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (state.navOpen && event.key === "Tab") {
+    trapNavFocus(event);
+    return;
+  }
+
   if (event.key !== "Escape" || !state.navOpen) return;
   setNavOpen(false);
   render();
@@ -86,10 +94,15 @@ function renderMain() {
 function renderShellState() {
   document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
   document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
+  setInert(".topbar", state.navOpen);
+  setInert("#view-root", state.navOpen);
+  setInert(".footer", state.navOpen);
+
   const drawer = document.querySelector(".mobile-drawer");
   if (drawer) {
     drawer.classList.toggle("is-open", state.navOpen);
     drawer.setAttribute("aria-hidden", String(!state.navOpen));
+    drawer.setAttribute("aria-modal", String(state.navOpen));
     if (state.navOpen) drawer.removeAttribute("inert");
     else drawer.setAttribute("inert", "");
   }
@@ -97,12 +110,17 @@ function renderShellState() {
   for (const link of document.querySelectorAll("[data-route]")) {
     link.classList.toggle("is-active", link.dataset.route === routeId());
   }
+
+  syncNavFocus(drawer);
 }
 
-function setNavOpen(open, { restoreScroll = true } = {}) {
+function setNavOpen(open, { restoreScroll = true, restoreFocus = true } = {}) {
   if (state.navOpen === open) return;
 
   if (open) {
+    navReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    shouldFocusDrawer = true;
+    shouldRestoreNavFocus = false;
     state.navScrollY = window.scrollY;
     document.body.style.top = `-${state.navScrollY}px`;
     document.body.classList.add("nav-open");
@@ -111,6 +129,9 @@ function setNavOpen(open, { restoreScroll = true } = {}) {
   }
 
   state.navOpen = false;
+  shouldFocusDrawer = false;
+  shouldRestoreNavFocus = restoreFocus;
+  if (!restoreFocus) navReturnFocus = null;
   document.body.classList.remove("nav-open");
   document.body.style.top = "";
 
@@ -128,7 +149,7 @@ function handleAction(action) {
       setNavOpen(false);
       return true;
     case "nav-link":
-      setNavOpen(false);
+      setNavOpen(false, { restoreFocus: false });
       return action.getAttribute("href") === routeHref();
     case "set-genre":
       state.genre = action.dataset.genre;
@@ -148,6 +169,51 @@ function routeHref() {
 
 function routeId() {
   return state.route.name === "home" ? "home" : state.route.name;
+}
+
+function setInert(selector, inert) {
+  const element = document.querySelector(selector);
+  if (!element) return;
+  if (inert) element.setAttribute("inert", "");
+  else element.removeAttribute("inert");
+}
+
+function syncNavFocus(drawer) {
+  if (state.navOpen && shouldFocusDrawer && drawer) {
+    shouldFocusDrawer = false;
+    if (!drawer.contains(document.activeElement)) {
+      (drawer.querySelector("a[href]") || drawer).focus({ preventScroll: true });
+    }
+    return;
+  }
+
+  if (!state.navOpen && shouldRestoreNavFocus) {
+    shouldRestoreNavFocus = false;
+    if (navReturnFocus?.isConnected) navReturnFocus.focus({ preventScroll: true });
+    navReturnFocus = null;
+  }
+}
+
+function trapNavFocus(event) {
+  const drawer = document.querySelector(".mobile-drawer");
+  if (!drawer) return;
+  const focusable = [...drawer.querySelectorAll("a[href], button:not([disabled])")];
+  if (!focusable.length) {
+    event.preventDefault();
+    drawer.focus({ preventScroll: true });
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable.at(-1);
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus({ preventScroll: true });
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus({ preventScroll: true });
+  }
 }
 
 function topbar() {
@@ -178,6 +244,9 @@ function topbar() {
       class="mobile-drawer ${state.navOpen ? "is-open" : ""}"
       aria-label="Mobile navigation"
       aria-hidden="${state.navOpen ? "false" : "true"}"
+      aria-modal="${state.navOpen ? "true" : "false"}"
+      role="dialog"
+      tabindex="-1"
       ${state.navOpen ? "" : "inert"}
     >
       <button class="drawer-close" data-action="close-nav" aria-label="Close menu">

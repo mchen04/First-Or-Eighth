@@ -17,6 +17,7 @@ const required = [
   "index.html",
   "src/app.js",
   "src/data.mjs",
+  "scripts/generate-screenshots.mjs",
   "scripts/image-metadata.mjs",
   "README.md",
   ...expectedCssFiles,

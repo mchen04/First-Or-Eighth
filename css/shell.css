@@ -214,3 +214,38 @@
   align-items: center;
   gap: 6px;
 }
+
+@media (max-width: 960px) {
+  .desktop-nav,
+  .online-pill {
+    display: none;
+  }
+
+  .icon-button {
+    display: grid;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand {
+    letter-spacing: 0.08em;
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-bottom: 8px;
+  }
+
+  .footer {
+    margin-top: 0;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}
