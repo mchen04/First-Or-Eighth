@@ -2,7 +2,7 @@
 
 ## Scope
 
-The hub is implemented as a dependency-light static site at the repository root. Global tokens stay in `styles.css`; shell, shared primitives, library/card, detail, creator/about, and responsive rules are split into focused files under `css/`.
+The hub is implemented as a dependency-light static site at the repository root. Global tokens stay in `styles.css`; shell, shared primitives, library/card, detail, creator, and responsive rules are split into focused files under `css/`.
 
 ## Relevant Design Aspects Implemented
 
@@ -16,7 +16,7 @@ The hub is implemented as a dependency-light static site at the repository root.
 - Builders are listed alphabetically and their handles link to GitHub profiles.
 - The topbar online count is derived from live playable games instead of being hardcoded.
 - Sticky top navigation with desktop links and a modal mobile drawer.
-- Responsive search, genre chips, sort control, card grid, game detail views, builder credits, and about page.
+- Responsive search, genre chips, sort control, card grid, game detail views, and builder credits.
 - Stats route removed per the final design instruction.
 - Small phone portrait: 320 x 568
 - iPhone portrait: 390 x 844

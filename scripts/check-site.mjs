@@ -8,7 +8,7 @@ const expectedCssFiles = [
   "css/primitives.css",
   "css/library.css",
   "css/detail.css",
-  "css/creators-about.css",
+  "css/creators.css",
   "css/responsive.css"
 ];
 
@@ -72,14 +72,14 @@ for (const query of [
 
 if (css.includes(".related h2")) fail("Linked stylesheet set must not style related card titles as section headings");
 
-for (const forbidden of ["statsPage", "#/stats", "hero("]) {
+for (const forbidden of ["statsPage", "#/stats", "hero(", "#/about", "aboutPage", "about-page", "about-copy"]) {
   if (js.includes(forbidden)) fail(`src/app.js still includes removed design element: ${forbidden}`);
 }
 
 if (!js.includes('sort: "az"')) fail("src/app.js should default to alphabetical sorting");
 
-for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "A few specials with AI doing things"]) {
-  if (!(js + data).includes(snippet)) fail(`Source missing requested builder/about copy: ${snippet}`);
+for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()"]) {
+  if (!(js + data).includes(snippet)) fail(`Source missing requested builder copy: ${snippet}`);
 }
 
 for (const game of games) {

@@ -7,7 +7,7 @@ First or Eighth is a responsive game hub for the current friend-group games:
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/> / source at <https://github.com/matthewh8/25-words-or-less>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
 
-The visual direction is a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, creator credits, and a short about page.
+The visual direction is a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, and creator credits.
 
 ## Credits
 

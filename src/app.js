@@ -68,7 +68,7 @@ function readRoute() {
   if (!hash) return { name: "home" };
   const [name, id] = hash.split("/");
   if (name === "game" && games.some((game) => game.id === id)) return { name: "game", id };
-  if (["creators", "about"].includes(name)) return { name };
+  if (name === "creators") return { name };
   return { name: "home" };
 }
 
@@ -222,8 +222,7 @@ function trapNavFocus(event) {
 function topbar() {
   const links = [
     ["home", "Games", "#/"],
-    ["creators", "Builders", "#/creators"],
-    ["about", "About", "#/about"]
+    ["creators", "Builders", "#/creators"]
   ];
 
   return `
@@ -272,7 +271,6 @@ function navLink(id, label, href, action = "") {
 function mainView() {
   if (state.route.name === "game") return gameDetail(games.find((game) => game.id === state.route.id));
   if (state.route.name === "creators") return creatorsPage();
-  if (state.route.name === "about") return aboutPage();
   return libraryPage();
 }
 
@@ -286,7 +284,7 @@ function libraryPage() {
       <section class="library-head">
         <div>
           <h1>Games.</h1>
-          <p>Everything we've built, plus what's still in the oven.</p>
+          <p>Everything we've built, plus what's still in the kitchen.</p>
         </div>
         <span>${games.length} ${games.length === 1 ? "game" : "games"} / ${wipCount} WIP</span>
       </section>
@@ -476,27 +474,6 @@ function creatorsPage() {
           `;
         }).join("")}
       </section>
-    </main>
-  `;
-}
-
-function aboutPage() {
-  return `
-    <main class="page about-page">
-      <section class="library-head">
-        <div>
-          <h1>Hi.</h1>
-          <p>First or Eighth is the friend-group game shelf.</p>
-        </div>
-      </section>
-      <div class="about-copy">
-        <p>
-          A few specials with AI doing things: small games, fast prototypes, weird tools, and whatever makes the group want to queue one more round.
-        </p>
-        <p>
-          First or Eighth is the shelf for the current rotation. Some games are live, some are still cooking, and the links stay one click away.
-        </p>
-      </div>
     </main>
   `;
 }
