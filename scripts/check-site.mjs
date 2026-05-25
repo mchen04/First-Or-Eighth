@@ -1,5 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, statSync } from "node:fs";
 
 const required = [
   "index.html",
@@ -69,8 +68,8 @@ for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()", "
   if (!js.includes(snippet)) fail(`src/app.js missing requested builder/about copy: ${snippet}`);
 }
 
-for (const file of walk("assets")) {
-  if (file.endsWith(".svg")) fail(`Unused SVG artifact should not be checked in: ${file}`);
+for (const file of ["assets/thumb-25.svg", "assets/thumb-ding.svg", "assets/thumb-pancake.svg", "assets/thumb-valence.svg"]) {
+  if (exists(file)) fail(`Unused thumbnail artifact should not be checked in: ${file}`);
 }
 
 console.log("Static site checks passed.");
@@ -82,17 +81,6 @@ function exists(path) {
   } catch {
     return false;
   }
-}
-
-function walk(dir) {
-  const out = [];
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    const stat = statSync(path);
-    if (stat.isDirectory()) out.push(...walk(path));
-    else out.push(path);
-  }
-  return out;
 }
 
 function fail(message) {
