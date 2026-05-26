@@ -56,6 +56,22 @@ export const games = [
       "Ding is a multiplayer collaborative poker-ranking game. Players share a room, move through preflop, flop, turn, river, and reveal, and try to place every hand at the table in exact strength order. A perfect board wins; any inversion costs the table."
   },
   {
+    id: "loldle",
+    name: "LoLdle",
+    status: "Live",
+    url: "https://loldle-app.vercel.app/",
+    sourceUrl: "https://github.com/mchen04/LoLdle",
+    creator: "michael",
+    editors: [],
+    genre: "Arcade",
+    year: "2026",
+    accent: "#c8aa6e",
+    screenshot: screenshotSet("assets/shot-loldle"),
+    tagline: "Guess League champions across five endless clue modes.",
+    description:
+      "LoLdle is an endless League of Legends champion guessing game. It supports Classic attribute feedback, Quote, Ability, Emoji, and Splash rounds, with champion search, stats, settings, and replayable randomized puzzles."
+  },
+  {
     id: "twenty-five",
     name: "25 Words or Less",
     status: "Live",

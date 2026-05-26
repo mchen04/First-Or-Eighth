@@ -3,6 +3,7 @@
 First or Eighth is a responsive game hub for the current friend-group games:
 
 - Ding: live at <https://ding-game.vercel.app/> / source at <https://github.com/jormyy/ding>
+- LoLdle: live at <https://loldle-app.vercel.app/> / source at <https://github.com/mchen04/LoLdle>
 - Valence: live at <https://valence1.vercel.app/> / source at <https://github.com/jormyy/valence>
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/> / source at <https://github.com/matthewh8/25-words-or-less>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
@@ -13,7 +14,7 @@ The visual direction is a neon dark game shelf with equal-weight cards, a mobile
 
 - Jeremy created Ding, Valence, and Pancake.
 - Matthew created 25 Words or Less.
-- Michael edited the current games and the hub presentation.
+- Michael created LoLdle and edited the other current games and the hub presentation.
 
 ## Development
 

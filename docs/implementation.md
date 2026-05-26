@@ -32,9 +32,10 @@ Only the user's current games are included. Add more games by appending to the `
 
 - Live games use a screenshot triplet generated from a common base name: `assets/shot-name-card.webp`, `assets/shot-name-detail.webp`, and `assets/shot-name.png`.
 - Run `npm run assets` after replacing a `1440 x 900` fallback PNG to regenerate the `640 x 400` card WebP and `1200 x 750` detail WebP.
-- Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding*`, creator Jeremy, editor Michael.
-- Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence*`, creator Jeremy, editor Michael.
 - 25 Words or Less: live link, GitHub source, and `assets/shot-25-words*`, creator Matthew, editor Michael.
+- Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding*`, creator Jeremy, editor Michael.
+- LoLdle: League champion guessing game with live link, GitHub source, and `assets/shot-loldle*`, creator Michael.
+- Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence*`, creator Jeremy, editor Michael.
 - Pancake: WIP with GitHub source, creator Jeremy, editor Michael.
 
 ## Verification Targets

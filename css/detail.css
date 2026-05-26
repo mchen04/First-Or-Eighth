@@ -27,6 +27,11 @@
 
 .detail-media {
   position: relative;
+  min-width: 0;
+}
+
+.detail-copy {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -253,6 +258,10 @@
   .detail-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .kv-grid {
+    grid-template-columns: 1fr;
   }
 
   .button {

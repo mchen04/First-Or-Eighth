@@ -52,11 +52,11 @@ for (const file of cssFiles) {
 
 const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 
-for (const name of ["Jeremy", "Matthew", "Michael", "Ding", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
+for (const name of ["Jeremy", "Matthew", "Michael", "Ding", "LoLdle", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
   if (!data.includes(name)) fail(`src/data.mjs missing expected game/creator copy: ${name}`);
 }
 
-for (const copy of ["collaborative poker-ranking", "live sports dashboard", "local same-screen party game"]) {
+for (const copy of ["collaborative poker-ranking", "League of Legends champion guessing", "live sports dashboard", "local same-screen party game"]) {
   if (!data.includes(copy)) fail(`src/data.mjs missing GitHub-informed description copy: ${copy}`);
 }
 
