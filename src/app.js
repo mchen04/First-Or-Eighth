@@ -30,6 +30,9 @@ const scrollLock = { active: false, y: 0 };
 // Where to send the user when the detail overlay closes.
 let detailReturn = "#/";
 
+// Pending "Copy link" label reset, so a rapid re-click owns the timer.
+let copyResetTimer = null;
+
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
@@ -118,11 +121,15 @@ function onDesktopChange() {
 function onClick(event) {
   const actionEl = event.target.closest("[data-action]");
   if (!actionEl) return;
-  if (handleAction(actionEl)) render();
+  if (handleAction(actionEl, event)) render();
 }
 
-function handleAction(actionEl) {
+function handleAction(actionEl, event) {
   switch (actionEl.dataset.action) {
+    case "skip-content":
+      event.preventDefault();
+      document.querySelector("#view-root")?.focus({ preventScroll: false });
+      return false;
     case "toggle-nav":
       state.navOpen = !state.navOpen;
       return true;
@@ -201,8 +208,9 @@ function render() {
 
 function renderShell() {
   app.innerHTML = `
+    <a class="skip-link" href="#view-root" data-action="skip-content">Skip to content</a>
     ${topbar()}
-    <div id="view-root"></div>
+    <div id="view-root" tabindex="-1"></div>
     <div id="overlay-root"></div>
     ${footer()}
   `;
@@ -253,9 +261,26 @@ function renderOverlay() {
 
   host.innerHTML = detailOverlay(game);
   host.dataset.gameId = game.id;
-  requestAnimationFrame(() => host.querySelector(".detail-overlay")?.classList.add("is-open"));
+  requestAnimationFrame(() => {
+    host.querySelector(".detail-overlay")?.classList.add("is-open");
+    syncScrollAffordance(host);
+  });
 
   if (wasOpen) focusInto(host.querySelector(".detail-panel"));
+}
+
+// Show a bottom fade on the description region only while it actually overflows
+// and is not scrolled to the end, so clipped text reads as scrollable.
+function syncScrollAffordance(host) {
+  const scroll = host.querySelector(".detail-scroll");
+  if (!scroll) return;
+  const update = () => {
+    const overflowing = scroll.scrollHeight - scroll.clientHeight > 1;
+    const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+    scroll.classList.toggle("show-fade", overflowing && !atBottom);
+  };
+  update();
+  scroll.addEventListener("scroll", update, { passive: true });
 }
 
 // Play the close transition, then tear down the DOM — unless a new overlay
@@ -286,9 +311,14 @@ function dismissOverlay(host) {
   const finish = () => {
     if (done) return;
     done = true;
+    overlay.removeEventListener("transitionend", onEnd);
     clear();
   };
-  overlay.addEventListener("transitionend", finish, { once: true });
+  // Wait for the panel's own transition, ignoring the scrim/buttons bubbling up.
+  const onEnd = (event) => {
+    if (event.target === overlay || event.target === overlay.querySelector(".detail-panel")) finish();
+  };
+  overlay.addEventListener("transitionend", onEnd);
   window.setTimeout(finish, 280);
 }
 
@@ -354,13 +384,22 @@ function syncScrollLock(shouldLock) {
 }
 
 function syncLayerFocus(layer) {
-  if (layer && layer !== activeLayer) {
+  // Only capture the return target when opening from no layer, so a drawer ->
+  // detail hand-off (e.g. browser back/forward) keeps the original trigger
+  // rather than a drawer link that is being inert-ed in the same pass.
+  if (layer && !activeLayer) {
     layerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+
+  if (layer && layer !== activeLayer) {
     focusInto(layerElement(layer));
   } else if (!layer && activeLayer) {
-    if (layerReturnFocus?.isConnected) layerReturnFocus.focus({ preventScroll: true });
+    if (layerReturnFocus?.isConnected && !layerReturnFocus.closest("[inert]")) {
+      layerReturnFocus.focus({ preventScroll: true });
+    }
     layerReturnFocus = null;
   }
+
   activeLayer = layer;
 }
 
@@ -457,7 +496,7 @@ function footer() {
       <span>FIRST_OR_EIGHTH</span>
       <span class="footer-creators">
         ${sortedCreators().map(([, creator]) => `
-          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
+          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(safeColor(creator.color))}"></span>${escapeHtml(creator.name)}</span>
         `).join("")}
       </span>
       <span>No ads / no tracking / no coins</span>
@@ -563,7 +602,7 @@ function option(value, label) {
 
 function gameCard(game) {
   return `
-    <article class="game-card surface" style="--accent:${escapeAttr(game.accent)}">
+    <article class="game-card surface" style="--accent:${escapeAttr(safeColor(game.accent))}">
       ${game.status === "WIP" ? wipBadge() : ""}
       <a class="card-open" href="#/game/${escapeAttr(game.id)}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
@@ -613,7 +652,7 @@ function detailOverlay(game) {
         aria-modal="true"
         aria-labelledby="detail-title"
         tabindex="-1"
-        style="--accent:${escapeAttr(game.accent)}; --accent-dark:${escapeAttr(shade(game.accent, -70))}"
+        style="${accentStyle(game.accent)}"
       >
         <button class="detail-close" data-action="close-detail" aria-label="Close details">
           <span></span><span></span>
@@ -627,13 +666,12 @@ function detailOverlay(game) {
         <div class="detail-body">
           <div class="detail-scroll">
             <div class="detail-content">
-              <p class="eyebrow ${isWip ? "is-wip" : ""}">${detailEyebrow(game, isWip)}</p>
+              <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
               <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
               <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
               <div class="detail-tags">
                 <span class="tag">${escapeHtml(game.genre)}</span>
                 <span class="tag">${escapeHtml(game.year)}</span>
-                <span class="tag ${isWip ? "is-wip" : "is-live"}">${escapeHtml(game.status)}</span>
               </div>
               <div class="detail-credits" role="group" aria-label="Built by">
                 ${creditPill(game.creator, "Creator")}
@@ -655,17 +693,12 @@ function detailOverlay(game) {
   `;
 }
 
-function detailEyebrow(game, isWip) {
-  if (isWip) return "Work in progress";
-  return `${escapeHtml(game.genre)} / ${escapeHtml(game.year)}`;
-}
-
 function creditPill(id, role) {
   const person = creators[id];
   if (!person) return "";
   return `
     <a class="credit-pill" href="${escapeAttr(safeUrl(person.githubUrl))}" target="_blank" rel="noreferrer noopener">
-      <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      <span class="person-dot" style="--person:${escapeAttr(safeColor(person.color))}" aria-hidden="true"></span>
       <span class="credit-name">${escapeHtml(person.name)}</span>
       <span class="credit-role">${escapeHtml(role)}</span>
     </a>
@@ -700,7 +733,7 @@ function creatorCard(id, creator) {
   return `
     <article class="creator-card surface">
       <div class="creator-head">
-        <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
+        <span class="person-orb" style="--person:${escapeAttr(safeColor(creator.color))}" aria-hidden="true"></span>
         <div>
           <h2>${escapeHtml(creator.name)}</h2>
           <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
@@ -732,7 +765,7 @@ function creatorCard(id, creator) {
 function thumb(game, big = false) {
   const image = game.screenshot;
   return `
-    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${escapeAttr(game.accent)}; --accent-dark:${escapeAttr(shade(game.accent, -70))}">
+    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="${accentStyle(game.accent)}">
       ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
       <span class="thumb-tag">${image ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
@@ -765,7 +798,7 @@ function personPill(id, editorCount = 0) {
   if (!person) return "";
   return `
     <span class="person-pill">
-      <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      <span class="person-dot" style="--person:${escapeAttr(safeColor(person.color))}" aria-hidden="true"></span>
       ${escapeHtml(person.name)}${editorCount ? ` <small>+${editorCount}</small>` : ""}
     </span>
   `;
@@ -780,7 +813,10 @@ async function copyCurrentLink(button) {
     const status = button.closest(".detail-panel")?.querySelector("[data-detail-status]");
     if (status) status.textContent = message;
   };
-  const reset = () => window.setTimeout(() => { button.textContent = "Copy link"; }, 1200);
+  const reset = () => {
+    window.clearTimeout(copyResetTimer);
+    copyResetTimer = window.setTimeout(() => { button.textContent = "Copy link"; }, 1200);
+  };
 
   try {
     await navigator.clipboard.writeText(location.href);
@@ -837,6 +873,17 @@ function clamp(value) {
 // in the data can never become a javascript:/data: URL.
 function safeUrl(value) {
   return /^https:\/\//i.test(value) ? value : "#";
+}
+
+// Only ever emit a literal hex color into inline style, so a bad value can
+// never inject CSS (and shade() never receives NaN-producing input).
+function safeColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : "#888888";
+}
+
+function accentStyle(accent) {
+  const color = safeColor(accent);
+  return `--accent:${escapeAttr(color)}; --accent-dark:${escapeAttr(shade(color, -70))}`;
 }
 
 function escapeAttr(value) {

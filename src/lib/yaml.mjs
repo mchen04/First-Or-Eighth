@@ -22,7 +22,7 @@ export class YamlError extends Error {
 }
 
 export function parseYaml(text) {
-  const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+  const lines = String(text).replace(/^﻿/, "").replace(/\r\n?/g, "\n").split("\n");
   const ctx = { lines, i: 0 };
   // Skip a leading document marker if present; everything else is content.
   skipBlankLines(ctx);
@@ -42,6 +42,12 @@ function parseNode(ctx, indent) {
   const content = line.slice(ind);
   if (isSequenceMarker(content)) return parseSequence(ctx, ind);
   if (findKeyColon(content) !== -1) return parseMapping(ctx, ind);
+
+  // A lone "key:value" (missing the space) reaches here as a "scalar"; catch it
+  // so a malformed first/only field fails loudly like a sibling field would.
+  if (looksLikeMalformedKey(content.trim())) {
+    throw new YamlError(`Expected "key: value" — is a space missing after ":"? Got: ${content.trim()}`, ctx.i);
+  }
 
   ctx.i++;
   return parseScalar(content.trim(), ctx.i - 1);
@@ -116,6 +122,8 @@ function parseSequence(ctx, indent) {
       // item's column, then let the mapping parser consume it and its siblings.
       ctx.lines[ctx.i] = " ".repeat(itemIndent) + itemContent;
       arr.push(parseMapping(ctx, itemIndent));
+    } else if (looksLikeMalformedKey(inlineItem)) {
+      throw new YamlError(`Expected "key: value" — is a space missing after ":"? Got: ${inlineItem}`, ctx.i);
     } else {
       ctx.i++;
       arr.push(parseScalar(inlineItem, ctx.i - 1));
@@ -126,13 +134,17 @@ function parseSequence(ctx, indent) {
 }
 
 // Parse a block value (mapping or sequence) that lives on the lines following a
-// "key:" or "-", indented deeper than the parent. Returns null for an empty
-// value.
+// "key:" or "-". A block sequence may align with its parent key (the one YAML
+// construct allowed to); anything else must be indented deeper. Returns null
+// for an empty value.
 function parseChildBlock(ctx, parentIndent) {
   skipBlankLines(ctx);
   if (ctx.i >= ctx.lines.length) return null;
   const ind = indentOf(ctx.lines[ctx.i], ctx.i);
-  if (ind <= parentIndent) return null;
+  if (ind < parentIndent) return null;
+  if (ind === parentIndent) {
+    return isSequenceMarker(ctx.lines[ctx.i].slice(ind)) ? parseSequence(ctx, ind) : null;
+  }
   return parseNode(ctx, ind);
 }
 
@@ -194,10 +206,34 @@ function parseScalar(value, lineNo) {
 
 function parseQuoted(value, lineNo) {
   const quote = value[0];
-  const end = value.lastIndexOf(quote);
-  if (end <= 0) throw new YamlError(`Unterminated quoted string: ${value}`, lineNo);
-  const body = value.slice(1, end);
 
+  // Find the true matching close quote (honoring "\\" / '\\"' escapes and the
+  // '' single-quote escape) rather than the last quote on the line, then make
+  // sure nothing but whitespace follows — otherwise text would be silently
+  // dropped (e.g. `tagline: "a" and more`).
+  let end = -1;
+  for (let i = 1; i < value.length; i++) {
+    const char = value[i];
+    if (quote === '"' && char === "\\") {
+      i++;
+      continue;
+    }
+    if (char === quote) {
+      if (quote === "'" && value[i + 1] === "'") {
+        i++;
+        continue;
+      }
+      end = i;
+      break;
+    }
+  }
+
+  if (end === -1) throw new YamlError(`Unterminated quoted string: ${value}`, lineNo);
+  if (value.slice(end + 1).trim() !== "") {
+    throw new YamlError(`Unexpected text after closing quote: ${value}`, lineNo);
+  }
+
+  const body = value.slice(1, end);
   if (quote === "'") return body.replace(/''/g, "'");
   return body
     .replace(/\\n/g, "\n")
@@ -277,10 +313,25 @@ function findKeyColon(content) {
     else if (char === "'" && !inDouble) inSingle = !inSingle;
     else if (char === ":" && !inSingle && !inDouble) {
       const next = content[i + 1];
-      if (next === undefined || next === " ") return i;
+      if (next === undefined || next === " " || next === "\t") return i;
     }
   }
   return -1;
+}
+
+// A trimmed line that is not a recognized key/sequence but looks like an
+// attempted "key:value" (missing the space after the colon) — used to fail
+// loudly instead of silently turning a field into a scalar. URL schemes
+// ("key://...") and quoted values are left alone.
+function looksLikeMalformedKey(content) {
+  const colon = content.indexOf(":");
+  if (colon <= 0) return false;
+  if (content[0] === '"' || content[0] === "'") return false;
+  if (!/^[\w-]+$/.test(content.slice(0, colon))) return false;
+  const next = content[colon + 1];
+  if (next === undefined || next === " " || next === "\t") return false;
+  if (content.slice(colon + 1, colon + 3) === "//") return false;
+  return true;
 }
 
 function indentOf(line, lineNo) {

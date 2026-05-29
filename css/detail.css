@@ -8,9 +8,11 @@
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding: clamp(16px, 4vh, 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .detail-scrim {
@@ -34,6 +36,7 @@
   flex-direction: column;
   width: min(760px, 100%);
   max-height: min(90vh, 760px);
+  max-height: min(90dvh, 760px);
   overflow: hidden;
   border: 1px solid var(--border-hover);
   border-radius: 14px;
@@ -107,6 +110,13 @@
   overscroll-behavior: contain;
 }
 
+/* Fade the bottom edge only while the description overflows and is not scrolled
+   to the end, so clipped text reads as scrollable rather than truncated. */
+.detail-scroll.show-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+
 .detail-content {
   padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 6px;
 }
@@ -123,6 +133,10 @@
 
 .eyebrow.is-wip {
   color: var(--warn);
+}
+
+.eyebrow.is-live {
+  color: var(--accent-2);
 }
 
 .detail-title {
@@ -158,16 +172,6 @@
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.tag.is-live {
-  border-color: var(--accent-2);
-  color: var(--accent-2);
-}
-
-.tag.is-wip {
-  border-color: var(--warn);
-  color: var(--warn);
 }
 
 .detail-credits {
@@ -319,8 +323,8 @@
 
 @media (orientation: landscape) and (max-height: 500px) {
   .detail-overlay {
-    align-items: center;
-    padding: 12px;
+    align-items: safe center;
+    padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
   .detail-panel {
@@ -352,8 +356,15 @@
     min-width: 0;
   }
 
+  /* Keep the compact one-row action bar in landscape even when width <= 520,
+     where the portrait two-row rule would otherwise win on source order. */
   .detail-actions {
+    grid-template-columns: 1fr auto auto;
     padding-top: 12px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detail-actions > :first-child {
+    grid-column: auto;
   }
 }

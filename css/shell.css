@@ -1,3 +1,25 @@
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 12px;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  z-index: 100;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .topbar {
   position: sticky;
   top: 0;

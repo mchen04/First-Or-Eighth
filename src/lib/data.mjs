@@ -12,6 +12,12 @@ const SCREENSHOT_CONTRACT = {
 export { SCREENSHOT_CONTRACT };
 
 export function buildData(rawCreators, rawGames) {
+  if (rawCreators != null && (typeof rawCreators !== "object" || Array.isArray(rawCreators))) {
+    throw new Error("data/creators.yaml must be a mapping of creator id to fields");
+  }
+  if (rawGames != null && !Array.isArray(rawGames)) {
+    throw new Error('data/games.yaml must be a list of game blocks (each starting with "- id:")');
+  }
   return {
     creators: normalizeCreators(rawCreators),
     games: normalizeGames(rawGames)
@@ -79,6 +85,7 @@ export function validateData({ creators, games }) {
   for (const [id, creator] of Object.entries(creators)) {
     if (!creator.name) errors.push(`Creator ${id} is missing a name`);
     if (!creator.handle) errors.push(`Creator ${id} is missing a handle`);
+    else if (typeof creator.handle !== "string") errors.push(`Creator ${id} handle must be text (quote it): ${JSON.stringify(creator.handle)}`);
     if (!creator.bio) errors.push(`Creator ${id} is missing a bio`);
     if (!isUrl(creator.githubUrl)) errors.push(`Creator ${id} has an invalid GitHub URL: ${creator.githubUrl}`);
     if (!isHexColor(creator.color)) errors.push(`Creator ${id} has an invalid color: ${creator.color}`);
@@ -87,7 +94,8 @@ export function validateData({ creators, games }) {
   const seenIds = new Set();
   for (const game of games) {
     const label = game.name || game.id || "(unnamed game)";
-    if (!game.id) errors.push("A game is missing its id");
+    if (game.id != null && typeof game.id !== "string") errors.push(`A game has a non-text id (quote it, e.g. id: "${game.id}"): ${JSON.stringify(game.id)}`);
+    else if (!game.id) errors.push("A game is missing its id");
     else if (seenIds.has(game.id)) errors.push(`Duplicate game id: ${game.id}`);
     else if (!/^[a-z0-9-]+$/.test(game.id)) errors.push(`Game id must be lowercase letters, numbers, and dashes: ${game.id}`);
     seenIds.add(game.id);
