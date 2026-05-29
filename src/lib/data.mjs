@@ -130,7 +130,8 @@ export function validateData({ creators, games }) {
     if (game.url && !isUrl(game.url)) errors.push(`${label} has an invalid play URL: ${show(game.url)}`);
     if (game.status === "Live" && !game.url) errors.push(`${label} is Live but has no play URL`);
     if (game.status === "Live" && !game.screenshot) errors.push(`${label} is Live but has no screenshot`);
-    if (game.status === "WIP" && game.url) errors.push(`${label} is WIP but still has a play URL (remove it until Live): ${game.url}`);
+    // A WIP game may carry a preview URL (an early build); url is only required
+    // once it is Live.
   }
 
   return errors;

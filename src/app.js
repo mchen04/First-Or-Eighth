@@ -768,11 +768,11 @@ function detailOverlay(game) {
             <p class="detail-desc">${escapeHtml(game.description)}</p>
           </div>
 
-          <div class="detail-actions ${isWip ? "is-duo" : ""}">
-            ${isWip
-              ? externalLink("button", game.sourceUrl, "Follow on GitHub", game.name)
-              : `${playButton(game, "Play")}
-            ${externalLink("button button-secondary", game.sourceUrl, "GitHub", game.name)}`}
+          <div class="detail-actions ${game.url ? "" : "is-duo"}">
+            ${game.url
+              ? `${playButton(game, "Play")}
+            ${externalLink("button button-secondary", game.sourceUrl, "GitHub", game.name)}`
+              : externalLink("button", game.sourceUrl, "Follow on GitHub", game.name)}
             <button class="button button-secondary" data-action="copy-link">Copy link</button>
             <span class="sr-only" data-detail-status aria-live="polite" aria-atomic="true"></span>
           </div>

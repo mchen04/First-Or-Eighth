@@ -16,7 +16,8 @@
 #               Lowercase letters, numbers, and dashes.
 #   name        Required. Display name.
 #   status      Required. "Live" or "WIP".
-#   url         Play URL. Required when status is Live; omit for WIP.
+#   url         Play URL. Required when status is Live; optional for WIP (a
+#               preview/early build link).
 #   source      Required. https:// URL to the source repository.
 #   creator     Required. A creator id from data/creators.yaml.
 #   editors     List of creator ids who edited it. Use [] for none.
@@ -157,7 +158,7 @@
   url: https://casino-topaz-gamma.vercel.app/
   source: https://github.com/mchen04/Casino
   creator: michael
-  editors: []
+  editors: [jeremy]
   genre: Arcade
   year: 2026
   accent: "#ef2d56"
@@ -174,6 +175,7 @@
 - id: pancake
   name: Pancake
   status: WIP
+  url: https://pancakedynasty.vercel.app
   source: https://github.com/jormyy/pancake
   creator: jeremy
   editors: [michael]
