@@ -92,7 +92,6 @@ export function validateData({ creators, games }) {
   for (const [id, creator] of Object.entries(creators)) {
     if (!creator.name) errors.push(`Creator ${id} is missing a name`);
     if (!creator.handle) errors.push(`Creator ${id} is missing a handle`);
-    else if (typeof creator.handle !== "string") errors.push(`Creator ${id} handle must be text (quote it): ${JSON.stringify(creator.handle)}`);
     if (!creator.bio) errors.push(`Creator ${id} is missing a bio`);
     if (!isUrl(creator.githubUrl)) errors.push(`Creator ${id} has an invalid GitHub URL: ${creator.githubUrl}`);
     if (!isHexColor(creator.color)) errors.push(`Creator ${id} has an invalid color: ${creator.color}`);

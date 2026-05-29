@@ -5,12 +5,13 @@
 // blank lines. It runs unchanged in the browser and in Node, so the YAML files
 // are the single canonical data source with no build step and no drift.
 //
-// It is intentionally not a full YAML 1.2 implementation. Two deliberate
-// simplifications keep hand-editing safe and easy:
-//   * Comments must be on their own line (start with "#"). A "#" inside a value
-//     is literal text, so `bio: Autist #3.` needs no quoting.
+// It is intentionally not a full YAML 1.2 implementation, but it follows YAML's
+// rules where it matters:
+//   * A "#" that begins a line or follows whitespace starts a comment, so a
+//     value containing a literal "#" must be quoted (e.g. bio: "Autist #3.").
 //   * A mapping line that is not "key: value" (e.g. a missing space after the
-//     colon) throws a clear error instead of silently dropping fields.
+//     colon), or a line indented out of alignment, throws a clear error instead
+//     of silently dropping fields.
 // Inputs are validated downstream in lib/data.mjs, so malformed data surfaces
 // as clear errors.
 
@@ -66,7 +67,7 @@ function parseMapping(ctx, indent) {
     // A line indented deeper than the mapping that was not consumed by a block
     // value is orphaned — fail loudly instead of silently dropping it and every
     // field after it.
-    if (ind > indent) throw new YamlError(`Unexpected indentation — orphaned content; check the previous line: ${line.trim()}`, ctx.i);
+    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block: ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     const colon = findKeyColon(content);
@@ -104,7 +105,7 @@ function parseSequence(ctx, indent) {
     const line = ctx.lines[ctx.i];
     const ind = indentOf(line, ctx.i);
     if (ind < indent) break;
-    if (ind > indent) throw new YamlError(`Unexpected indentation — orphaned content; check the previous line: ${line.trim()}`, ctx.i);
+    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block: ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     if (!isSequenceMarker(content)) break;

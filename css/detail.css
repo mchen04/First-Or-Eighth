@@ -118,6 +118,11 @@
   padding: 14px clamp(20px, 3vw, 32px) 4px;
 }
 
+.detail-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 /* Fade the bottom edge only while the description overflows and is not scrolled
    to the end, so clipped text reads as scrollable rather than truncated. */
 .detail-scroll.show-fade {
@@ -341,6 +346,15 @@
   .detail-actions > :first-child {
     grid-column: 1 / -1;
   }
+
+  /* WIP's two-button bar stays on one row. */
+  .detail-actions.is-duo {
+    grid-template-columns: 1fr auto;
+  }
+
+  .detail-actions.is-duo > :first-child {
+    grid-column: auto;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
@@ -381,8 +395,13 @@
     min-width: 0;
   }
 
-  /* Reserve clearance for the floating close button and let long titles wrap. */
+  /* Reserve clearance for the floating close button and let long titles wrap.
+     The header may shrink/scroll here so the pinned action bar (fixed height)
+     is never clipped on short landscape viewports. */
   .detail-header {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     padding-right: 60px;
   }
 
@@ -420,6 +439,14 @@
 
   .detail-title {
     font-size: 22px;
+  }
+
+  .detail-tagline {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 6px;
   }
 
   .detail-tags,

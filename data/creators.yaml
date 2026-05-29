@@ -4,9 +4,8 @@
 # `creator:` and `editors:`. To add a builder, copy a block below and fill in
 # the fields. Order here does not matter; the site sorts builders by name.
 #
-# Comments must be on their own line (start with "#"). A "#" inside a value is
-# literal text, so `bio: Autist #3.` is fine; the quoting below is just for
-# clarity.
+# A "#" that follows a space starts a comment, so any value containing a literal
+# "#" must be wrapped in double quotes (e.g. bio: "Autist #3.", color: "#ff3d7f").
 #
 # Fields (all required):
 #   name    Display name.

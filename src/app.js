@@ -247,15 +247,18 @@ function renderOverlay() {
   const host = document.querySelector("#overlay-root");
 
   if (state.route.name !== "game") {
+    document.title = BASE_TITLE;
     dismissOverlay(host);
     return;
   }
 
   const game = games.find((candidate) => candidate.id === state.route.id);
   if (!game) {
+    document.title = BASE_TITLE;
     dismissOverlay(host);
     return;
   }
+  document.title = `${game.name} — ${BASE_TITLE}`;
   if (host.dataset.gameId === game.id) return;
 
   // Already-open overlay swapping to a different game (e.g. a manual hash
@@ -288,6 +291,8 @@ function syncScrollAffordance(host) {
     const overflowing = scroll.scrollHeight - scroll.clientHeight > 1;
     const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
     scroll.classList.toggle("show-fade", overflowing && !atBottom);
+    // Only a tab stop when there is something to scroll to.
+    scroll.tabIndex = overflowing ? 0 : -1;
   };
   update();
   scroll.addEventListener("scroll", update, { passive: true });
@@ -345,6 +350,14 @@ function prefersReducedMotion() {
 function syncShellState() {
   const layer = currentLayer();
   const overlayActive = layer !== null;
+
+  // Capture the trigger to return focus to BEFORE inert blurs it. Applying
+  // inert to an ancestor of the focused element (the card or hamburger) blurs
+  // it synchronously, so this must happen before the setInert calls below.
+  if (layer && !activeLayer) {
+    const active = document.activeElement;
+    layerReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
+  }
 
   const navToggle = document.querySelector("[data-action='toggle-nav']");
   navToggle?.setAttribute("aria-expanded", String(state.navOpen));
@@ -405,13 +418,9 @@ function syncScrollLock(shouldLock) {
 }
 
 function syncLayerFocus(layer) {
-  // Only capture the return target when opening from no layer, so a drawer ->
-  // detail hand-off (e.g. browser back/forward) keeps the original trigger
-  // rather than a drawer link that is being inert-ed in the same pass.
-  if (layer && !activeLayer) {
-    layerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  }
-
+  // The return target was captured in syncShellState() before inert ran (see
+  // there). A drawer -> detail hand-off keeps the original trigger because
+  // layerReturnFocus is only (re)captured on the no-layer -> layer transition.
   if (layer && layer !== activeLayer) {
     // The detail panel is a labelled dialog (role + aria-labelledby), so focus
     // the container itself to announce the game title; the drawer focuses its
@@ -471,6 +480,8 @@ function setInert(selector, inert) {
 // Shell
 // ---------------------------------------------------------------------------
 
+const BASE_TITLE = "First or Eighth";
+
 const NAV_LINKS = [
   ["home", "Games", "#/"],
   ["creators", "Builders", "#/creators"]
@@ -488,13 +499,14 @@ function topbar() {
       </nav>
       <div class="topbar-right">
         <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
-        <button class="icon-button" data-action="toggle-nav" aria-label="${state.navOpen ? "Close menu" : "Open menu"}" aria-expanded="${state.navOpen}">
+        <button class="icon-button" data-action="toggle-nav" aria-controls="mobile-drawer" aria-label="${state.navOpen ? "Close menu" : "Open menu"}" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
       </div>
     </header>
     <div class="mobile-scrim ${state.navOpen ? "is-open" : ""}" data-action="close-nav"></div>
     <aside
+      id="mobile-drawer"
       class="mobile-drawer ${state.navOpen ? "is-open" : ""}"
       aria-label="Mobile navigation"
       aria-hidden="${state.navOpen ? "false" : "true"}"
@@ -712,7 +724,7 @@ function detailOverlay(game) {
             </div>
           </div>
 
-          <div class="detail-scroll" tabindex="0" role="region" aria-label="${escapeAttr(game.name)} description">
+          <div class="detail-scroll" role="region" aria-label="${escapeAttr(game.name)} description">
             <p class="detail-desc">${escapeHtml(game.description)}</p>
           </div>
 
