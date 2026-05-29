@@ -162,7 +162,7 @@ export const games = [
     id: "pancake",
     name: "Pancake",
     status: "WIP",
-    url: "",
+    url: "https://pancakedynasty.vercel.app",
     sourceUrl: "https://github.com/jormyy/pancake",
     creator: "jeremy",
     editors: ["michael"],
