@@ -1,8 +1,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { games } from "../src/data.mjs";
+import { loadDataSync, fromRoot } from "../src/lib/node.mjs";
+
+// Regenerates the responsive WebP variants for every game that has a capture.
+// Drop a fresh 1440x900 PNG at assets/<id>.png and run `npm run assets`; the
+// card (640x400) and detail (1200x750) WebPs are derived from it.
 
 const contracts = [
   ["card", 640, 400],
@@ -12,6 +16,7 @@ const contracts = [
 ensureCommand("sips", ["--version"]);
 ensureCommand("cwebp", ["-version"]);
 
+const { games } = loadDataSync();
 const workspace = mkdtempSync(join(tmpdir(), "first-eighth-assets-"));
 
 try {
@@ -26,14 +31,11 @@ try {
 console.log("Screenshot WebP assets generated.");
 
 function generateSet(game) {
-  for (const [kind, width, height] of contracts) {
-    const source = game.screenshot.fallback;
-    const target = game.screenshot[kind];
-    const resized = join(workspace, `${game.id}-${kind}.png`);
+  const source = fromRoot(game.screenshot.fallback);
 
-    if (dirname(target) !== dirname(source)) {
-      fail(`${game.name} ${kind} screenshot must stay beside its fallback: ${target}`);
-    }
+  for (const [kind, width, height] of contracts) {
+    const target = fromRoot(game.screenshot[kind]);
+    const resized = join(workspace, `${game.id}-${kind}.png`);
 
     run("sips", ["-z", String(height), String(width), source, "--out", resized], `resize ${game.name} ${kind}`);
     run("cwebp", ["-quiet", "-q", "82", resized, "-o", target], `encode ${game.name} ${kind}`);

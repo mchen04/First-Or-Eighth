@@ -8,7 +8,7 @@
   --text: #f5f6fb;
   --text-dim: #c5c8d8;
   --text-mute: #9aa0b4;
-  --text-faint: #5a5f7a;
+  --text-faint: #868cab;
   --accent: #ff3d7f;
   --accent-2: #54d2d2;
   --warn: #ffb627;
@@ -20,6 +20,30 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html {
@@ -44,7 +68,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body.nav-open {
+body.scroll-lock {
   position: fixed;
   right: 0;
   left: 0;
@@ -80,4 +104,19 @@ input:focus-visible,
 select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.chip,
+.card-link,
+.credit-pill,
+.card-open {
+  transition: transform 120ms ease;
+}
+
+.button:not(:disabled):not(.is-disabled):active,
+.chip:active,
+.card-link:not(.is-disabled):active,
+.credit-pill:active,
+.card-open:active {
+  transform: scale(0.97);
 }

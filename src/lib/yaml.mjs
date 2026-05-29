@@ -1,0 +1,300 @@
+// A small, dependency-free YAML parser covering the subset this project's data
+// files use: block mappings, block sequences (including the compact "- key:"
+// form), inline flow sequences ([a, b]), single/double quoted and plain
+// scalars, folded (>) and literal (|) block scalars, whole-line comments, and
+// blank lines. It runs unchanged in the browser and in Node, so the YAML files
+// are the single canonical data source with no build step and no drift.
+//
+// It is intentionally not a full YAML 1.2 implementation. Two deliberate
+// simplifications keep hand-editing safe and easy:
+//   * Comments must be on their own line (start with "#"). A "#" inside a value
+//     is literal text, so `bio: Autist #3.` needs no quoting.
+//   * A mapping line that is not "key: value" (e.g. a missing space after the
+//     colon) throws a clear error instead of silently dropping fields.
+// Inputs are validated downstream in lib/data.mjs, so malformed data surfaces
+// as clear errors.
+
+export class YamlError extends Error {
+  constructor(message, line) {
+    super(line == null ? message : `${message} (line ${line + 1})`);
+    this.name = "YamlError";
+  }
+}
+
+export function parseYaml(text) {
+  const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+  const ctx = { lines, i: 0 };
+  // Skip a leading document marker if present; everything else is content.
+  skipBlankLines(ctx);
+  if (ctx.i < ctx.lines.length && ctx.lines[ctx.i].trim() === "---") ctx.i++;
+  const value = parseNode(ctx, 0);
+  return value === undefined ? null : value;
+}
+
+function parseNode(ctx, indent) {
+  skipBlankLines(ctx);
+  if (ctx.i >= ctx.lines.length) return null;
+
+  const line = ctx.lines[ctx.i];
+  const ind = indentOf(line, ctx.i);
+  if (ind < indent) return null;
+
+  const content = line.slice(ind);
+  if (isSequenceMarker(content)) return parseSequence(ctx, ind);
+  if (findKeyColon(content) !== -1) return parseMapping(ctx, ind);
+
+  ctx.i++;
+  return parseScalar(content.trim(), ctx.i - 1);
+}
+
+function parseMapping(ctx, indent) {
+  const map = {};
+
+  for (;;) {
+    skipBlankLines(ctx);
+    if (ctx.i >= ctx.lines.length) break;
+
+    const line = ctx.lines[ctx.i];
+    const ind = indentOf(line, ctx.i);
+    if (ind !== indent) break;
+
+    const content = line.slice(ind);
+    const colon = findKeyColon(content);
+    if (colon === -1) {
+      // A line at the mapping's own indent that is not a key is malformed —
+      // most often a missing space after the colon (e.g. "url:https://..."),
+      // which would otherwise silently drop this field and every field after.
+      if (isSequenceMarker(content)) break;
+      throw new YamlError(`Expected "key: value" — is a space missing after ":"? Got: ${content}`, ctx.i);
+    }
+
+    const key = parseKey(content.slice(0, colon), ctx.i);
+    const rest = content.slice(colon + 1).trim();
+    ctx.i++;
+
+    if (isBlockScalarHeader(rest)) {
+      map[key] = parseBlockScalar(ctx, indent, rest[0] === ">");
+    } else if (rest === "") {
+      map[key] = parseChildBlock(ctx, indent);
+    } else {
+      map[key] = parseScalar(rest, ctx.i - 1);
+    }
+  }
+
+  return map;
+}
+
+function parseSequence(ctx, indent) {
+  const arr = [];
+
+  for (;;) {
+    skipBlankLines(ctx);
+    if (ctx.i >= ctx.lines.length) break;
+
+    const line = ctx.lines[ctx.i];
+    const ind = indentOf(line, ctx.i);
+    if (ind !== indent) break;
+
+    const content = line.slice(ind);
+    if (!isSequenceMarker(content)) break;
+
+    const after = content.slice(1);
+    const inlineItem = after.trim();
+
+    if (inlineItem === "") {
+      ctx.i++;
+      arr.push(parseChildBlock(ctx, indent));
+      continue;
+    }
+
+    const leadSpaces = after.length - after.trimStart().length;
+    const itemIndent = ind + 1 + leadSpaces;
+    const itemContent = after.trimStart();
+
+    if (findKeyColon(itemContent) !== -1) {
+      // Compact "- key: value": rewrite the line so its first key sits at the
+      // item's column, then let the mapping parser consume it and its siblings.
+      ctx.lines[ctx.i] = " ".repeat(itemIndent) + itemContent;
+      arr.push(parseMapping(ctx, itemIndent));
+    } else {
+      ctx.i++;
+      arr.push(parseScalar(inlineItem, ctx.i - 1));
+    }
+  }
+
+  return arr;
+}
+
+// Parse a block value (mapping or sequence) that lives on the lines following a
+// "key:" or "-", indented deeper than the parent. Returns null for an empty
+// value.
+function parseChildBlock(ctx, parentIndent) {
+  skipBlankLines(ctx);
+  if (ctx.i >= ctx.lines.length) return null;
+  const ind = indentOf(ctx.lines[ctx.i], ctx.i);
+  if (ind <= parentIndent) return null;
+  return parseNode(ctx, ind);
+}
+
+function parseBlockScalar(ctx, parentIndent, folded) {
+  // Collect the block's lines first, then strip the common (minimum) indent so
+  // a line indented less than the first one is never over-sliced.
+  const collected = [];
+  const indents = [];
+
+  while (ctx.i < ctx.lines.length) {
+    const line = ctx.lines[ctx.i];
+    if (line.trim() === "") {
+      collected.push(null);
+      ctx.i++;
+      continue;
+    }
+    const ind = indentOf(line, ctx.i);
+    if (ind <= parentIndent) break;
+    collected.push(line);
+    indents.push(ind);
+    ctx.i++;
+  }
+
+  const blockIndent = indents.length ? Math.min(...indents) : parentIndent + 1;
+  const raw = collected.map((line) => (line === null ? "" : line.slice(blockIndent)));
+
+  while (raw.length && raw[0] === "") raw.shift();
+  while (raw.length && raw[raw.length - 1] === "") raw.pop();
+
+  if (!folded) return raw.join("\n");
+
+  let out = "";
+  for (const piece of raw) {
+    if (piece === "") {
+      out += "\n";
+    } else {
+      if (out && !out.endsWith("\n")) out += " ";
+      out += piece.trim();
+    }
+  }
+  return out;
+}
+
+function parseScalar(value, lineNo) {
+  if (value === "") return null;
+
+  const first = value[0];
+  if (first === '"' || first === "'") return parseQuoted(value, lineNo);
+  if (first === "[") return parseFlowSequence(value, lineNo);
+  if (first === "{") return parseFlowMapping(value, lineNo);
+
+  if (value === "null" || value === "Null" || value === "NULL" || value === "~") return null;
+  if (value === "true" || value === "True" || value === "TRUE") return true;
+  if (value === "false" || value === "False" || value === "FALSE") return false;
+  if (/^[-+]?\d+$/.test(value)) return Number(value);
+  if (/^[-+]?(?:\d+\.\d*|\.\d+|\d+(?:[eE][-+]?\d+))$/.test(value)) return Number(value);
+  return value;
+}
+
+function parseQuoted(value, lineNo) {
+  const quote = value[0];
+  const end = value.lastIndexOf(quote);
+  if (end <= 0) throw new YamlError(`Unterminated quoted string: ${value}`, lineNo);
+  const body = value.slice(1, end);
+
+  if (quote === "'") return body.replace(/''/g, "'");
+  return body
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
+}
+
+function parseFlowSequence(value, lineNo) {
+  const close = value.lastIndexOf("]");
+  if (close === -1) throw new YamlError(`Unterminated flow sequence: ${value}`, lineNo);
+  return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo));
+}
+
+function parseFlowMapping(value, lineNo) {
+  const close = value.lastIndexOf("}");
+  if (close === -1) throw new YamlError(`Unterminated flow mapping: ${value}`, lineNo);
+  const map = {};
+  for (const pair of splitFlow(value.slice(1, close))) {
+    const colon = findKeyColon(pair);
+    if (colon === -1) throw new YamlError(`Invalid flow mapping entry: ${pair}`, lineNo);
+    map[parseKey(pair.slice(0, colon), lineNo)] = parseScalar(pair.slice(colon + 1).trim(), lineNo);
+  }
+  return map;
+}
+
+function splitFlow(inner) {
+  const items = [];
+  let buf = "";
+  let inSingle = false;
+  let inDouble = false;
+  let depth = 0;
+
+  for (const char of inner) {
+    if (char === '"' && !inSingle) inDouble = !inDouble;
+    else if (char === "'" && !inDouble) inSingle = !inSingle;
+
+    if (!inSingle && !inDouble) {
+      if (char === "[" || char === "{") depth++;
+      else if (char === "]" || char === "}") depth--;
+      else if (char === "," && depth === 0) {
+        items.push(buf);
+        buf = "";
+        continue;
+      }
+    }
+    buf += char;
+  }
+
+  if (buf.trim() !== "" || items.length) items.push(buf);
+  return items.map((item) => item.trim()).filter((item) => item !== "");
+}
+
+function parseKey(raw, lineNo) {
+  const key = raw.trim();
+  if (key[0] === '"' || key[0] === "'") return parseQuoted(key, lineNo);
+  return key;
+}
+
+function isSequenceMarker(content) {
+  return content[0] === "-" && (content.length === 1 || content[1] === " ");
+}
+
+function isBlockScalarHeader(rest) {
+  return /^[>|][+-]?$/.test(rest);
+}
+
+// Index of the colon that terminates a mapping key (a ":" followed by a space
+// or end of line, outside quotes), or -1 when the line is not a key line.
+function findKeyColon(content) {
+  let inSingle = false;
+  let inDouble = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    if (char === '"' && !inSingle) inDouble = !inDouble;
+    else if (char === "'" && !inDouble) inSingle = !inSingle;
+    else if (char === ":" && !inSingle && !inDouble) {
+      const next = content[i + 1];
+      if (next === undefined || next === " ") return i;
+    }
+  }
+  return -1;
+}
+
+function indentOf(line, lineNo) {
+  let n = 0;
+  while (n < line.length && line[n] === " ") n++;
+  if (line[n] === "\t") throw new YamlError("Tabs are not allowed for indentation", lineNo);
+  return n;
+}
+
+function isSkippable(line) {
+  const trimmed = line.trim();
+  return trimmed === "" || trimmed[0] === "#";
+}
+
+function skipBlankLines(ctx) {
+  while (ctx.i < ctx.lines.length && isSkippable(ctx.lines[ctx.i])) ctx.i++;
+}

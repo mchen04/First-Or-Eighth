@@ -1,0 +1,44 @@
+# Builders — the friend group behind First or Eighth.
+#
+# Each top-level key is a creator id, referenced from data/games.yaml by
+# `creator:` and `editors:`. To add a builder, copy a block below and fill in
+# the fields. Order here does not matter; the site sorts builders by name.
+#
+# Comments must be on their own line (start with "#"). A "#" inside a value is
+# literal text, so `bio: Autist #3.` is fine; the quoting below is just for
+# clarity.
+#
+# Fields (all required):
+#   name    Display name.
+#   handle  GitHub-style handle.
+#   github  Full https:// URL to their GitHub profile.
+#   color   Hex accent color.
+#   bio     One-line bio.
+
+michael:
+  name: Michael
+  handle: "@mchen04"
+  github: https://github.com/mchen04
+  color: "#ff3d7f"
+  bio: "Autist #3."
+
+jeremy:
+  name: Jeremy
+  handle: "@jormyy"
+  github: https://github.com/jormyy
+  color: "#54d2d2"
+  bio: "Autist #1."
+
+matthew:
+  name: Matthew
+  handle: "@matthewh8"
+  github: https://github.com/matthewh8
+  color: "#ffb627"
+  bio: "Autist #2."
+
+justin:
+  name: Justin
+  handle: "@justinwtan"
+  github: https://github.com/justinwtan
+  color: "#5b8cff"
+  bio: "Autist #4."

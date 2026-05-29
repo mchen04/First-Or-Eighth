@@ -12,14 +12,41 @@ First or Eighth is a responsive game hub for the current friend-group games:
 - Neon Royale: live at <https://casino-topaz-gamma.vercel.app/> / source at <https://github.com/mchen04/Casino>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
 
-The visual direction is a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, and creator credits.
+The visual direction is a neon dark game shelf with equal-weight cards, a mobile
+drawer, searchable/filterable listings, a compact game detail overlay, and
+builder credits.
 
-## Credits
+## Data — the single canonical source
 
-- Jeremy created Ding, Valence, Heardle, and Pancake.
-- Matthew created 25 Words or Less.
-- Michael created LoLdle, King's Cup, Pour Decisions, and Neon Royale, and edited the other current games and the hub presentation.
-- Justin edited King's Cup.
+Everything the hub shows comes from two hand-editable YAML files:
+
+- [`data/creators.yaml`](data/creators.yaml) — the builders.
+- [`data/games.yaml`](data/games.yaml) — the games.
+
+There is no build step and no generated copy of the data. The browser fetches
+the YAML at runtime, and the Node checks read the very same files, so what ships
+and what is verified can never drift. Both go through one small dependency-free
+parser in [`src/lib/yaml.mjs`](src/lib/yaml.mjs) and one normalize/validate
+layer in [`src/lib/data.mjs`](src/lib/data.mjs).
+
+### Add a builder
+
+Copy a block in `data/creators.yaml`, give it a new id, and fill in `name`,
+`handle`, `github`, `color`, and `bio`. Reference the id from any game's
+`creator` or `editors`.
+
+### Add a game
+
+1. Add an entry to `data/games.yaml` (copy an existing block — the fields are
+   documented at the top of the file).
+2. Drop a `1440x900` capture at `assets/<id>.png`, where `<id>` matches the
+   game's `id`.
+3. Run `npm run assets` to generate the `640x400` card and `1200x750` detail
+   WebP variants.
+
+That's it — the listing, search, filters, sort, builder counts, footer, online
+count, and the static checks all derive from that one entry. A work-in-progress
+game with no capture sets `screenshot: false` and uses the striped placeholder.
 
 ## Development
 
@@ -31,14 +58,25 @@ npm run dev
 
 Then open <http://localhost:5173>.
 
-Run the static checks with:
+Run the static checks (data validation, file/stylesheet contracts, and image
+dimension checks) with:
 
 ```sh
 npm run check
 ```
 
+## Credits
+
+- Jeremy created Ding, Valence, Heardle, and Pancake.
+- Matthew created 25 Words or Less.
+- Michael created LoLdle, King's Cup, Pour Decisions, and Neon Royale, and edited the other current games and the hub presentation.
+- Justin edited King's Cup.
+
 ## Design Notes
 
-The current implementation removes the featured hero, stats route, and letter-icon thumbnails. Games stay in an equal alphabetical list, each playable card exposes Play and GitHub links, and the layout is maintained across mobile portrait, mobile landscape, tablet, and desktop.
-
-Temporary review screenshots and browser artifacts belong outside the repo, for example under `/tmp/first-eighth-critical/`.
+Games stay in an equal alphabetical list, each playable card exposes Play and
+GitHub links, and opening a card raises a deep-linkable detail overlay
+(`#/game/<id>`) tuned so the capture, title, tagline, tags, builders, and action
+bar stay in view without scrolling across mobile portrait, mobile landscape,
+tablet, and desktop. Temporary review screenshots and browser artifacts belong
+outside the repo, for example under `/tmp/first-eighth-critical/`.

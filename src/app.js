@@ -1,213 +1,388 @@
-import { creators, games } from "./data.mjs";
+import { loadData } from "./data.mjs";
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
 
 const state = {
-  route: readRoute(),
+  route: { name: "home" },
   query: "",
   genre: "All",
   sort: "az",
   navOpen: false,
-  navScrollY: 0
+  ready: false
 };
 
 const app = document.querySelector("#app");
-const desktopNav = window.matchMedia("(min-width: 961px)");
+const desktopQuery = window.matchMedia("(min-width: 961px)");
+
+let creators = {};
+let games = [];
+
 let shellRendered = false;
-let navReturnFocus = null;
-let shouldFocusDrawer = false;
-let shouldRestoreNavFocus = false;
+let mountedPage = null; // "library" | "creators" — the background page in #view-root
 
-desktopNav.addEventListener("change", () => {
-  if (!desktopNav.matches || !state.navOpen) return;
-  setNavOpen(false);
-  render();
-});
+// Modal layer bookkeeping (shared by the nav drawer and the detail overlay).
+let activeLayer = null; // "nav" | "detail" | null
+let layerReturnFocus = null;
+const scrollLock = { active: false, y: 0 };
 
-window.addEventListener("hashchange", () => {
+// Where to send the user when the detail overlay closes.
+let detailReturn = "#/";
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
+window.addEventListener("hashchange", onHashChange);
+document.addEventListener("click", onClick);
+document.addEventListener("input", onInput);
+document.addEventListener("keydown", onKeydown);
+desktopQuery.addEventListener("change", onDesktopChange);
+
+boot();
+
+async function boot() {
+  try {
+    const data = await loadData();
+    creators = data.creators;
+    games = data.games;
+  } catch (error) {
+    renderFatal(error);
+    return;
+  }
+  state.ready = true;
   state.route = readRoute();
-  setNavOpen(false, { restoreScroll: false });
+  normalizeUnresolvedHash();
   render();
-  window.scrollTo({ top: 0, behavior: "auto" });
-});
+}
 
-document.addEventListener("click", (event) => {
-  const action = event.target.closest("[data-action]");
-  if (!action) return;
-
-  if (handleAction(action)) render();
-});
-
-document.addEventListener("input", (event) => {
-  if (event.target.matches("[data-search]")) {
-    state.query = event.target.value;
-    renderMain();
-    restoreSearchFocus();
-    return;
-  }
-
-  if (event.target.matches("[data-sort]")) {
-    state.sort = event.target.value;
-    renderMain();
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (state.navOpen && event.key === "Tab") {
-    trapNavFocus(event);
-    return;
-  }
-
-  if (event.key !== "Escape" || !state.navOpen) return;
-  setNavOpen(false);
-  render();
-});
-
-render();
+// ---------------------------------------------------------------------------
+// Routing
+// ---------------------------------------------------------------------------
 
 function readRoute() {
   const hash = location.hash.replace(/^#\/?/, "");
   if (!hash) return { name: "home" };
   const [name, id] = hash.split("/");
   if (name === "game" && games.some((game) => game.id === id)) return { name: "game", id };
-  if (name === "creators") return { name };
+  if (name === "creators") return { name: "creators" };
   return { name: "home" };
 }
 
-function render() {
-  if (!shellRendered) renderShell();
-  renderShellState();
-  renderMain();
+function currentHash() {
+  return location.hash || "#/";
 }
 
-function renderShell() {
-  app.innerHTML = `
-    ${topbar()}
-    <div id="view-root"></div>
-    ${footer()}
-  `;
-  shellRendered = true;
+// If the URL points at a game that does not resolve (unknown/empty id), repair
+// the address bar so it stops lying about the view. replaceState avoids both a
+// spurious history entry and re-triggering hashchange.
+function normalizeUnresolvedHash() {
+  if (location.hash.startsWith("#/game") && state.route.name !== "game") {
+    history.replaceState(null, "", "#/");
+  }
 }
 
-function renderMain() {
-  document.querySelector("#view-root").innerHTML = mainView();
-}
+function onHashChange() {
+  if (!state.ready) return;
+  const previous = state.route.name;
+  const next = readRoute();
 
-function renderShellState() {
-  document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
-  document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
-  setInert(".topbar", state.navOpen);
-  setInert("#view-root", state.navOpen);
-  setInert(".footer", state.navOpen);
-
-  const drawer = document.querySelector(".mobile-drawer");
-  if (drawer) {
-    drawer.classList.toggle("is-open", state.navOpen);
-    drawer.setAttribute("aria-hidden", String(!state.navOpen));
-    drawer.setAttribute("aria-modal", String(state.navOpen));
-    if (state.navOpen) drawer.removeAttribute("inert");
-    else drawer.setAttribute("inert", "");
+  if (next.name === "game" && previous !== "game") {
+    detailReturn = previous === "creators" ? "#/creators" : "#/";
   }
 
-  for (const link of document.querySelectorAll("[data-route]")) {
-    link.classList.toggle("is-active", link.dataset.route === routeId());
-  }
-
-  syncNavFocus(drawer);
-}
-
-function setNavOpen(open, { restoreScroll = true, restoreFocus = true } = {}) {
-  if (state.navOpen === open) return;
-
-  if (open) {
-    navReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    shouldFocusDrawer = true;
-    shouldRestoreNavFocus = false;
-    state.navScrollY = window.scrollY;
-    document.body.style.top = `-${state.navScrollY}px`;
-    document.body.classList.add("nav-open");
-    state.navOpen = true;
-    return;
-  }
-
+  state.route = next;
   state.navOpen = false;
-  shouldFocusDrawer = false;
-  shouldRestoreNavFocus = restoreFocus;
-  if (!restoreFocus) navReturnFocus = null;
-  document.body.classList.remove("nav-open");
-  document.body.style.top = "";
+  normalizeUnresolvedHash();
+  render();
 
-  if (restoreScroll) {
-    window.scrollTo({ top: state.navScrollY, behavior: "auto" });
+  // Top-level page navigations start at the top; opening/closing the detail
+  // overlay preserves the background scroll position via the scroll lock.
+  if (next.name !== "game" && previous !== "game") {
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 }
 
-function handleAction(action) {
-  switch (action.dataset.action) {
+function onDesktopChange() {
+  if (desktopQuery.matches && state.navOpen) {
+    state.navOpen = false;
+    render();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+function onClick(event) {
+  const actionEl = event.target.closest("[data-action]");
+  if (!actionEl) return;
+  if (handleAction(actionEl)) render();
+}
+
+function handleAction(actionEl) {
+  switch (actionEl.dataset.action) {
     case "toggle-nav":
-      setNavOpen(!state.navOpen);
+      state.navOpen = !state.navOpen;
       return true;
     case "close-nav":
-      setNavOpen(false);
+      state.navOpen = false;
       return true;
     case "nav-link":
-      setNavOpen(false, { restoreFocus: false });
-      return action.getAttribute("href") === routeHref();
+      state.navOpen = false;
+      return actionEl.getAttribute("href") === currentHash();
     case "set-genre":
-      state.genre = action.dataset.genre;
-      return true;
+      state.genre = actionEl.dataset.genre;
+      syncGenreChips();
+      renderResults();
+      return false;
+    case "clear-filters": {
+      state.query = "";
+      state.genre = "All";
+      const input = document.querySelector("[data-search]");
+      if (input) input.value = "";
+      syncGenreChips();
+      renderResults();
+      return false;
+    }
     case "copy-link":
-      copyCurrentLink(action);
+      copyCurrentLink(actionEl);
+      return false;
+    case "close-detail":
+      location.hash = detailReturn || "#/";
       return false;
     default:
       return false;
   }
 }
 
-function routeHref() {
-  if (state.route.name === "home") return "#/";
-  return `#/${state.route.name}`;
+function onInput(event) {
+  if (event.target.matches("[data-search]")) {
+    state.query = event.target.value;
+    renderResults();
+    return;
+  }
+  if (event.target.matches("[data-sort]")) {
+    state.sort = event.target.value;
+    renderResults();
+  }
 }
 
-function routeId() {
-  return state.route.name === "home" ? "home" : state.route.name;
-}
+function onKeydown(event) {
+  const layer = currentLayer();
+  if (!layer) return;
 
-function setInert(selector, inert) {
-  const element = document.querySelector(selector);
-  if (!element) return;
-  if (inert) element.setAttribute("inert", "");
-  else element.removeAttribute("inert");
-}
-
-function syncNavFocus(drawer) {
-  if (state.navOpen && shouldFocusDrawer && drawer) {
-    shouldFocusDrawer = false;
-    if (!drawer.contains(document.activeElement)) {
-      (drawer.querySelector("a[href]") || drawer).focus({ preventScroll: true });
-    }
+  if (event.key === "Tab") {
+    trapFocus(event, layerElement(layer));
     return;
   }
 
-  if (!state.navOpen && shouldRestoreNavFocus) {
-    shouldRestoreNavFocus = false;
-    if (navReturnFocus?.isConnected) navReturnFocus.focus({ preventScroll: true });
-    navReturnFocus = null;
+  if (event.key === "Escape") {
+    if (layer === "nav") {
+      state.navOpen = false;
+      render();
+    } else {
+      location.hash = detailReturn || "#/";
+    }
   }
 }
 
-function trapNavFocus(event) {
+// ---------------------------------------------------------------------------
+// Render orchestration
+// ---------------------------------------------------------------------------
+
+function render() {
+  if (!shellRendered) renderShell();
+  renderBackground();
+  renderOverlay();
+  syncShellState();
+}
+
+function renderShell() {
+  app.innerHTML = `
+    ${topbar()}
+    <div id="view-root"></div>
+    <div id="overlay-root"></div>
+    ${footer()}
+  `;
+  shellRendered = true;
+}
+
+function renderBackground() {
+  const viewRoot = document.querySelector("#view-root");
+  // A game route keeps whatever page is already mounted behind the overlay
+  // (defaulting to the library on a cold deep-link). Keeping that DOM intact
+  // preserves the library's scroll/search state and lets focus return to the
+  // exact card the overlay was opened from when it closes.
+  const wanted =
+    state.route.name === "creators" ? "creators" :
+    state.route.name === "game" ? (mountedPage ?? "library") :
+    "library";
+
+  if (mountedPage === wanted) return;
+
+  viewRoot.innerHTML = wanted === "creators" ? creatorsPage() : libraryPage();
+  mountedPage = wanted;
+}
+
+function renderResults() {
+  const host = document.querySelector("#game-results");
+  if (host) host.innerHTML = resultsMarkup();
+}
+
+function renderOverlay() {
+  const host = document.querySelector("#overlay-root");
+
+  if (state.route.name !== "game") {
+    dismissOverlay(host);
+    return;
+  }
+
+  const game = games.find((candidate) => candidate.id === state.route.id);
+  if (!game) {
+    dismissOverlay(host);
+    return;
+  }
+  if (host.dataset.gameId === game.id) return;
+
+  // Already-open overlay swapping to a different game (e.g. a manual hash
+  // change): move focus into the rebuilt panel. On a fresh open this stays
+  // false so syncLayerFocus can record the trigger element for focus return.
+  const wasOpen = activeLayer === "detail";
+
+  host.innerHTML = detailOverlay(game);
+  host.dataset.gameId = game.id;
+  requestAnimationFrame(() => host.querySelector(".detail-overlay")?.classList.add("is-open"));
+
+  if (wasOpen) focusInto(host.querySelector(".detail-panel"));
+}
+
+// Play the close transition, then tear down the DOM — unless a new overlay
+// opened in the meantime (dataset.gameId set again).
+function dismissOverlay(host) {
+  if (!host.dataset.gameId) return;
+  delete host.dataset.gameId;
+
+  const overlay = host.querySelector(".detail-overlay");
+  if (!overlay) {
+    host.innerHTML = "";
+    return;
+  }
+
+  const clear = () => {
+    if (!host.dataset.gameId) host.innerHTML = "";
+  };
+
+  if (prefersReducedMotion()) {
+    clear();
+    return;
+  }
+
+  overlay.classList.remove("is-open");
+  overlay.style.pointerEvents = "none";
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clear();
+  };
+  overlay.addEventListener("transitionend", finish, { once: true });
+  window.setTimeout(finish, 280);
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function syncShellState() {
+  const layer = currentLayer();
+  const overlayActive = layer !== null;
+
+  document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
+  document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
+
+  setInert(".topbar", overlayActive);
+  setInert("#view-root", overlayActive);
+  setInert(".footer", overlayActive);
+
   const drawer = document.querySelector(".mobile-drawer");
-  if (!drawer) return;
-  const focusable = [...drawer.querySelectorAll("a[href], button:not([disabled])")];
+  if (drawer) {
+    drawer.classList.toggle("is-open", state.navOpen);
+    drawer.setAttribute("aria-hidden", String(!state.navOpen));
+    drawer.setAttribute("aria-modal", String(state.navOpen));
+    drawer.toggleAttribute("inert", !state.navOpen);
+  }
+
+  for (const link of document.querySelectorAll("[data-route]")) {
+    link.classList.toggle("is-active", link.dataset.route === routeId());
+  }
+
+  syncScrollLock(overlayActive);
+  syncLayerFocus(layer);
+}
+
+// ---------------------------------------------------------------------------
+// Modal layer helpers (drawer + detail overlay)
+// ---------------------------------------------------------------------------
+
+function currentLayer() {
+  if (state.navOpen) return "nav";
+  if (state.route.name === "game") return "detail";
+  return null;
+}
+
+function layerElement(layer) {
+  if (layer === "nav") return document.querySelector(".mobile-drawer");
+  if (layer === "detail") return document.querySelector(".detail-panel");
+  return null;
+}
+
+function syncScrollLock(shouldLock) {
+  if (shouldLock && !scrollLock.active) {
+    scrollLock.y = window.scrollY;
+    document.body.style.top = `-${scrollLock.y}px`;
+    document.body.classList.add("scroll-lock");
+    scrollLock.active = true;
+  } else if (!shouldLock && scrollLock.active) {
+    scrollLock.active = false;
+    document.body.classList.remove("scroll-lock");
+    document.body.style.top = "";
+    window.scrollTo({ top: scrollLock.y, behavior: "auto" });
+  }
+}
+
+function syncLayerFocus(layer) {
+  if (layer && layer !== activeLayer) {
+    layerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    focusInto(layerElement(layer));
+  } else if (!layer && activeLayer) {
+    if (layerReturnFocus?.isConnected) layerReturnFocus.focus({ preventScroll: true });
+    layerReturnFocus = null;
+  }
+  activeLayer = layer;
+}
+
+function focusInto(element) {
+  if (!element || element.contains(document.activeElement)) return;
+  const focusable = element.querySelector("a[href], button:not([disabled]), input, select, [tabindex]");
+  (focusable || element).focus({ preventScroll: true });
+}
+
+function trapFocus(event, container) {
+  if (!container) return;
+  const focusable = [...container.querySelectorAll("a[href], button:not([disabled]), input, select")];
   if (!focusable.length) {
     event.preventDefault();
-    drawer.focus({ preventScroll: true });
+    container.focus({ preventScroll: true });
     return;
   }
 
   const first = focusable[0];
   const last = focusable.at(-1);
 
-  if (!drawer.contains(document.activeElement)) {
+  if (!container.contains(document.activeElement)) {
     event.preventDefault();
     (event.shiftKey ? last : first).focus({ preventScroll: true });
   } else if (event.shiftKey && document.activeElement === first) {
@@ -219,12 +394,20 @@ function trapNavFocus(event) {
   }
 }
 
-function topbar() {
-  const links = [
-    ["home", "Games", "#/"],
-    ["creators", "Builders", "#/creators"]
-  ];
+function setInert(selector, inert) {
+  document.querySelector(selector)?.toggleAttribute("inert", inert);
+}
 
+// ---------------------------------------------------------------------------
+// Shell
+// ---------------------------------------------------------------------------
+
+const NAV_LINKS = [
+  ["home", "Games", "#/"],
+  ["creators", "Builders", "#/creators"]
+];
+
+function topbar() {
   return `
     <header class="topbar">
       <a class="brand" href="#/" aria-label="First or Eighth home">
@@ -232,7 +415,7 @@ function topbar() {
         <span>FIRST_OR_EIGHTH</span>
       </a>
       <nav class="desktop-nav" aria-label="Primary">
-        ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
+        ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
         <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
@@ -254,7 +437,7 @@ function topbar() {
       <button class="drawer-close" data-action="close-nav" aria-label="Close menu">
         <span></span><span></span>
       </button>
-      ${links.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
+      ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
       <div class="drawer-foot">
         <span class="status-dot"></span>
         ${games.length} ${games.length === 1 ? "game" : "games"} in rotation
@@ -264,23 +447,34 @@ function topbar() {
 }
 
 function navLink(id, label, href, action = "") {
-  const active = (id === "home" && state.route.name === "home") || id === state.route.name;
+  const active = id === routeId();
   return `<a class="${active ? "is-active" : ""}" href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
 }
 
-function mainView() {
-  if (state.route.name === "game") return gameDetail(games.find((game) => game.id === state.route.id));
-  if (state.route.name === "creators") return creatorsPage();
-  return libraryPage();
+function footer() {
+  return `
+    <footer class="footer">
+      <span>FIRST_OR_EIGHTH</span>
+      <span class="footer-creators">
+        ${sortedCreators().map(([, creator]) => `
+          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
+        `).join("")}
+      </span>
+      <span>No ads / no tracking / no coins</span>
+    </footer>
+  `;
 }
 
+// ---------------------------------------------------------------------------
+// Library page
+// ---------------------------------------------------------------------------
+
 function libraryPage() {
-  const filtered = filteredGames();
   const genres = ["All", ...new Set(games.map((game) => game.genre))];
   const wipCount = games.filter((game) => game.status === "WIP").length;
 
   return `
-    <main class="page">
+    <main class="page" data-page="library">
       <section class="library-head">
         <div>
           <h1>Games.</h1>
@@ -305,36 +499,59 @@ function libraryPage() {
         </label>
       </section>
 
-      ${genres.length > 2 ? `
-        <section class="chip-row" aria-label="Genre filters">
-          ${genres.map((genre) => `
-            <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
-              ${escapeHtml(genre)}
-            </button>
-          `).join("")}
-        </section>
-      ` : ""}
+      ${genres.length > 2 ? chipRow(genres) : ""}
 
-      ${filtered.length ? `<section class="game-grid">${filtered.map(gameCard).join("")}</section>` : emptyState()}
+      <div class="game-results" id="game-results">${resultsMarkup()}</div>
     </main>
   `;
 }
 
+function chipRow(genres) {
+  return `
+    <section class="chip-row" aria-label="Genre filters">
+      ${genres.map((genre) => `
+        <button class="chip ${state.genre === genre ? "is-active" : ""}" aria-pressed="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
+          ${escapeHtml(genre)}
+        </button>
+      `).join("")}
+    </section>
+  `;
+}
+
+function syncGenreChips() {
+  for (const chip of document.querySelectorAll(".chip[data-genre]")) {
+    const on = chip.dataset.genre === state.genre;
+    chip.classList.toggle("is-active", on);
+    chip.setAttribute("aria-pressed", String(on));
+  }
+}
+
+function resultsMarkup() {
+  const list = filteredGames();
+  return list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState();
+}
+
 function filteredGames() {
   const query = state.query.trim().toLowerCase();
-  let list = games.filter((game) => {
-    const creator = creators[game.creator].name;
-    const editorNames = game.editors.map((id) => creators[id].name).join(" ");
-    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames} ${game.status} ${game.url} ${game.sourceUrl}`.toLowerCase();
-    return (state.genre === "All" || game.genre === state.genre) && (!query || haystack.includes(query));
+  const list = games.filter((game) => {
+    if (state.genre !== "All" && game.genre !== state.genre) return false;
+    if (!query) return true;
+    return searchText(game).includes(query);
   });
-
-  if (state.sort === "newest") list = [...list].sort((a, b) => b.year.localeCompare(a.year) || byGameName(a, b));
-  if (state.sort === "az") list = [...list].sort(byGameName);
-  if (state.sort === "creator") list = [...list].sort((a, b) => creators[a.creator].name.localeCompare(creators[b.creator].name) || a.name.localeCompare(b.name));
-  if (state.sort === "status") list = [...list].sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b));
-  return list;
+  return [...list].sort(sorters[state.sort] ?? sorters.az);
 }
+
+function searchText(game) {
+  const people = [game.creator, ...game.editors].map((id) => creators[id]?.name ?? "").join(" ");
+  return `${game.name} ${game.genre} ${game.tagline} ${game.description} ${people} ${game.status} ${game.url} ${game.sourceUrl}`.toLowerCase();
+}
+
+const sorters = {
+  az: byGameName,
+  newest: (a, b) => b.year.localeCompare(a.year) || byGameName(a, b),
+  creator: (a, b) => (creators[a.creator]?.name ?? "").localeCompare(creators[b.creator]?.name ?? "") || byGameName(a, b),
+  status: (a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b)
+};
 
 function byGameName(a, b) {
   return a.name.localeCompare(b.name, undefined, { numeric: true });
@@ -363,77 +580,105 @@ function gameCard(game) {
         </div>
         <div class="card-actions">
           ${cardPlayLink(game)}
-          <a class="card-link" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener" aria-label="Open ${escapeAttr(game.name)} GitHub repository">GitHub</a>
+          <a class="card-link" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener" aria-label="Open ${escapeAttr(game.name)} GitHub repository">GitHub</a>
         </div>
       </div>
     </article>
   `;
 }
 
-function gameDetail(game) {
-  const related = games.filter((candidate) => candidate.id !== game.id).sort(byGameName);
-  const isWip = game.status === "WIP";
-
+function emptyState() {
   return `
-    <main class="page detail-page">
-      <a class="back-link" href="#/">Back to games</a>
-      <section class="detail-hero">
-        <div class="detail-media" style="--accent:${escapeAttr(game.accent)}">
-          ${isWip ? wipBadge() : ""}
-          ${thumb(game, true)}
-        </div>
-        <div class="detail-copy">
-          <p class="eyebrow ${isWip ? "is-wip" : ""}">${gameEyebrow(game, isWip)}</p>
-          <h1>${escapeHtml(game.name)}.</h1>
-          <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
-          <div class="detail-actions">
-            ${playButton(game, isWip ? "Not ready" : `Play ${game.name}`)}
-            <a class="button button-secondary" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener">GitHub</a>
-            <button class="button button-secondary" data-action="copy-link">Copy page link</button>
-          </div>
-          <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
-            <div class="kv surface"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
-            <div class="kv surface"><span>Year</span><strong>${escapeHtml(game.year)}</strong></div>
-            <div class="kv surface"><span>Status</span><strong>${escapeHtml(game.status)}</strong></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="detail-section">
-        <h2>About</h2>
-        <p>${escapeHtml(game.description)}</p>
-        ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${escapeHtml(creators[game.creator].name)} on Discord.</p>` : ""}
-      </section>
-
-      <section class="detail-section">
-        <h2>Links</h2>
-        <div class="link-list">
-          ${game.url ? `<a href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener"><strong>Play</strong><span>${escapeHtml(game.url)}</span></a>` : `<span><strong>Play</strong><span>Not live yet</span></span>`}
-          <a href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener"><strong>GitHub</strong><span>${escapeHtml(game.sourceUrl)}</span></a>
-        </div>
-      </section>
-
-      <section class="detail-section">
-        <h2>Built by</h2>
-        <div class="credit-list">
-          ${creditCard(game.creator, "Creator")}
-          ${game.editors.map((id) => creditCard(id, "Editor")).join("")}
-        </div>
-      </section>
-
-      ${related.length ? `
-        <section class="related">
-          <h2>Other games</h2>
-          <div class="game-grid related-grid">${related.map(gameCard).join("")}</div>
-        </section>
-      ` : ""}
-    </main>
+    <section class="empty-state surface">
+      <h2>Nothing here.</h2>
+      <p>Try a different search or clear the filters.</p>
+      <button class="button button-secondary" data-action="clear-filters">Clear filters</button>
+    </section>
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Detail overlay
+// ---------------------------------------------------------------------------
+
+function detailOverlay(game) {
+  const isWip = game.status === "WIP";
+
+  return `
+    <div class="detail-overlay" role="presentation">
+      <div class="detail-scrim" data-action="close-detail" aria-hidden="true"></div>
+      <div
+        class="detail-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-title"
+        tabindex="-1"
+        style="--accent:${escapeAttr(game.accent)}; --accent-dark:${escapeAttr(shade(game.accent, -70))}"
+      >
+        <button class="detail-close" data-action="close-detail" aria-label="Close details">
+          <span></span><span></span>
+        </button>
+
+        <div class="detail-media">
+          ${isWip ? wipBadge() : ""}
+          ${thumb(game, true)}
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-scroll">
+            <div class="detail-content">
+              <p class="eyebrow ${isWip ? "is-wip" : ""}">${detailEyebrow(game, isWip)}</p>
+              <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
+              <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
+              <div class="detail-tags">
+                <span class="tag">${escapeHtml(game.genre)}</span>
+                <span class="tag">${escapeHtml(game.year)}</span>
+                <span class="tag ${isWip ? "is-wip" : "is-live"}">${escapeHtml(game.status)}</span>
+              </div>
+              <div class="detail-credits" role="group" aria-label="Built by">
+                ${creditPill(game.creator, "Creator")}
+                ${game.editors.map((id) => creditPill(id, "Editor")).join("")}
+              </div>
+              <p class="detail-desc">${escapeHtml(game.description)}</p>
+            </div>
+          </div>
+
+          <div class="detail-actions">
+            ${playButton(game, isWip ? "Not ready yet" : `Play ${game.name}`)}
+            <a class="button button-secondary" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">GitHub</a>
+            <button class="button button-secondary" data-action="copy-link">Copy link</button>
+            <span class="sr-only" data-detail-status aria-live="polite" aria-atomic="true"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function detailEyebrow(game, isWip) {
+  if (isWip) return "Work in progress";
+  return `${escapeHtml(game.genre)} / ${escapeHtml(game.year)}`;
+}
+
+function creditPill(id, role) {
+  const person = creators[id];
+  if (!person) return "";
+  return `
+    <a class="credit-pill" href="${escapeAttr(safeUrl(person.githubUrl))}" target="_blank" rel="noreferrer noopener">
+      <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      <span class="credit-name">${escapeHtml(person.name)}</span>
+      <span class="credit-role">${escapeHtml(role)}</span>
+    </a>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Creators page
+// ---------------------------------------------------------------------------
+
 function creatorsPage() {
   return `
-    <main class="page">
+    <main class="page" data-page="creators">
       <section class="library-head">
         <div>
           <h1>Builders.</h1>
@@ -441,42 +686,48 @@ function creatorsPage() {
         </div>
       </section>
       <section class="creator-grid">
-        ${sortedCreators().map(([id, creator]) => {
-          const created = games.filter((game) => game.creator === id);
-          const edited = games.filter((game) => game.editors.includes(id));
-          const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
-
-          return `
-            <article class="creator-card surface">
-              <div class="creator-head">
-                <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
-                <div>
-                  <h2>${escapeHtml(creator.name)}</h2>
-                  <a class="creator-handle" href="${escapeAttr(creator.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
-                </div>
-              </div>
-              <p>${escapeHtml(creator.bio)}</p>
-              <div class="creator-stats">
-                <span><strong>${created.length}</strong> created</span>
-                <span><strong>${edited.length}</strong> edited</span>
-              </div>
-              ${listed.length ? `
-                <div class="creator-games">
-                  ${listed.map((game) => `
-                    <a href="#/game/${escapeAttr(game.id)}">
-                      <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
-                      <small>${game.creator === id ? "Creator" : "Editor"}</small>
-                    </a>
-                  `).join("")}
-                </div>
-              ` : ""}
-            </article>
-          `;
-        }).join("")}
+        ${sortedCreators().map(([id, creator]) => creatorCard(id, creator)).join("")}
       </section>
     </main>
   `;
 }
+
+function creatorCard(id, creator) {
+  const created = games.filter((game) => game.creator === id);
+  const edited = games.filter((game) => game.editors.includes(id));
+  const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
+
+  return `
+    <article class="creator-card surface">
+      <div class="creator-head">
+        <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
+        <div>
+          <h2>${escapeHtml(creator.name)}</h2>
+          <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
+        </div>
+      </div>
+      <p>${escapeHtml(creator.bio)}</p>
+      <div class="creator-stats">
+        <span><strong>${created.length}</strong> created</span>
+        <span><strong>${edited.length}</strong> edited</span>
+      </div>
+      ${listed.length ? `
+        <div class="creator-games">
+          ${listed.map((game) => `
+            <a href="#/game/${escapeAttr(game.id)}">
+              <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
+              <small>${game.creator === id ? "Creator" : "Editor"}</small>
+            </a>
+          `).join("")}
+        </div>
+      ` : ""}
+    </article>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Shared building blocks
+// ---------------------------------------------------------------------------
 
 function thumb(game, big = false) {
   const image = game.screenshot;
@@ -489,7 +740,7 @@ function thumb(game, big = false) {
 }
 
 function screenshotImage(game, image, big) {
-  const sizes = big ? "(max-width: 840px) 100vw, 52vw" : "(max-width: 520px) 100vw, 360px";
+  const sizes = big ? "(max-width: 840px) 100vw, 720px" : "(max-width: 520px) 100vw, 360px";
   const priority = big ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
   return `
     <picture>
@@ -499,23 +750,19 @@ function screenshotImage(game, image, big) {
   `;
 }
 
-function gameEyebrow(game, isWip) {
-  if (isWip) return "Work in progress";
-  return `${escapeHtml(game.genre)} / ${escapeHtml(game.year)}`;
-}
-
 function playButton(game, label) {
   if (!game.url) return `<button class="button is-disabled" disabled>${escapeHtml(label)}</button>`;
-  return `<a class="button" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+  return `<a class="button" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
 }
 
 function cardPlayLink(game) {
   if (!game.url) return `<span class="card-link is-disabled">Not live</span>`;
-  return `<a class="card-link is-primary" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
+  return `<a class="card-link is-primary" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
 }
 
 function personPill(id, editorCount = 0) {
   const person = creators[id];
+  if (!person) return "";
   return `
     <span class="person-pill">
       <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
@@ -524,64 +771,46 @@ function personPill(id, editorCount = 0) {
   `;
 }
 
-function creditCard(id, role) {
-  const person = creators[id];
-  return `
-    <article class="credit-card surface">
-      <span class="person-orb" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
-      <div>
-        <h3>${escapeHtml(person.name)}</h3>
-        <p>${escapeHtml(role)} / <a class="inline-handle" href="${escapeAttr(person.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(person.handle)}</a></p>
-      </div>
-    </article>
-  `;
-}
-
 function wipBadge() {
   return `<span class="wip-badge"><span></span>WIP</span>`;
 }
 
-function emptyState() {
-  return `
-    <section class="empty-state surface">
-      <h2>Nothing here.</h2>
-      <p>Try a different search or clear the filters.</p>
-    </section>
-  `;
-}
-
 async function copyCurrentLink(button) {
-  const text = location.href;
+  const announce = (message) => {
+    const status = button.closest(".detail-panel")?.querySelector("[data-detail-status]");
+    if (status) status.textContent = message;
+  };
+  const reset = () => window.setTimeout(() => { button.textContent = "Copy link"; }, 1200);
+
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(location.href);
     button.textContent = "Copied";
-    window.setTimeout(() => {
-      button.textContent = "Copy page link";
-    }, 1200);
+    announce("Link copied");
+    reset();
   } catch {
     button.textContent = "Copy failed";
+    announce("Copy failed");
+    reset();
   }
 }
 
-function footer() {
-  return `
-    <footer class="footer">
-      <span>FIRST_OR_EIGHTH</span>
-      <span class="footer-creators">
-        ${sortedCreators().map(([, creator]) => `
-          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
-        `).join("")}
-      </span>
-      <span>No ads / no tracking / no coins</span>
-    </footer>
+function renderFatal(error) {
+  app.innerHTML = `
+    <main class="page">
+      <section class="empty-state surface">
+        <h2>Couldn't load the games.</h2>
+        <p>${escapeHtml(error.message)}</p>
+      </section>
+    </main>
   `;
 }
 
-function restoreSearchFocus() {
-  const input = document.querySelector("[data-search]");
-  if (!input) return;
-  input.focus();
-  input.setSelectionRange(state.query.length, state.query.length);
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+function routeId() {
+  return state.route.name === "game" ? "home" : state.route.name;
 }
 
 function sortedCreators() {
@@ -593,8 +822,7 @@ function onlineCount() {
 }
 
 function shade(hex, amount) {
-  const value = hex.replace("#", "");
-  const number = Number.parseInt(value, 16);
+  const number = Number.parseInt(hex.replace("#", ""), 16);
   const red = clamp((number >> 16) + amount);
   const green = clamp(((number >> 8) & 255) + amount);
   const blue = clamp((number & 255) + amount);
@@ -603,6 +831,12 @@ function shade(hex, amount) {
 
 function clamp(value) {
   return Math.max(0, Math.min(255, value));
+}
+
+// Only ever emit https:// links into href attributes, so a bad/hostile value
+// in the data can never become a javascript:/data: URL.
+function safeUrl(value) {
+  return /^https:\/\//i.test(value) ? value : "#";
 }
 
 function escapeAttr(value) {
