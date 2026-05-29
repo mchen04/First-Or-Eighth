@@ -29,11 +29,11 @@ function normalizeCreators(raw) {
   for (const [id, value] of Object.entries(raw ?? {})) {
     creators[id] = {
       id,
-      name: value?.name,
-      handle: value?.handle,
+      name: text(value?.name),
+      handle: text(value?.handle),
       githubUrl: value?.github,
       color: value?.color,
-      bio: value?.bio
+      bio: text(value?.bio)
     };
   }
   return creators;
@@ -75,7 +75,9 @@ function text(value) {
 }
 
 function screenshotFor(game) {
-  if (game?.screenshot === false || !game?.id) return null;
+  const flag = game?.screenshot;
+  const disabled = flag === false || (typeof flag === "string" && ["false", "no", "off"].includes(flag.trim().toLowerCase()));
+  if (disabled || !game?.id) return null;
   const base = `assets/${game.id}`;
   return Object.fromEntries(
     Object.entries(SCREENSHOT_CONTRACT).map(([kind, contract]) => [kind, `${base}${contract.suffix}`])

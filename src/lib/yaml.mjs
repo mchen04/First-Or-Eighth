@@ -62,7 +62,11 @@ function parseMapping(ctx, indent) {
 
     const line = ctx.lines[ctx.i];
     const ind = indentOf(line, ctx.i);
-    if (ind !== indent) break;
+    if (ind < indent) break;
+    // A line indented deeper than the mapping that was not consumed by a block
+    // value is orphaned — fail loudly instead of silently dropping it and every
+    // field after it.
+    if (ind > indent) throw new YamlError(`Unexpected indentation — orphaned content; check the previous line: ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     const colon = findKeyColon(content);
@@ -99,7 +103,8 @@ function parseSequence(ctx, indent) {
 
     const line = ctx.lines[ctx.i];
     const ind = indentOf(line, ctx.i);
-    if (ind !== indent) break;
+    if (ind < indent) break;
+    if (ind > indent) throw new YamlError(`Unexpected indentation — orphaned content; check the previous line: ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     if (!isSequenceMarker(content)) break;
@@ -196,6 +201,14 @@ function parseScalar(value, lineNo) {
   if (first === "[") return parseFlowSequence(value, lineNo);
   if (first === "{") return parseFlowMapping(value, lineNo);
 
+  // Plain scalar: a "#" that starts the value or follows whitespace begins a
+  // comment that runs to end of line (standard YAML). A literal "#" in a value
+  // must therefore be quoted (e.g. bio: "Autist #3.").
+  if (first === "#") return null;
+  const comment = value.search(/\s#/);
+  if (comment !== -1) value = value.slice(0, comment).trimEnd();
+  if (value === "") return null;
+
   if (value === "null" || value === "Null" || value === "NULL" || value === "~") return null;
   if (value === "true" || value === "True" || value === "TRUE") return true;
   if (value === "false" || value === "False" || value === "FALSE") return false;
@@ -232,7 +245,8 @@ function parseQuoted(value, lineNo) {
     const hint = quote === "'" ? ' — a value starting with an apostrophe must be wrapped in double quotes, e.g. "\'em all"' : "";
     throw new YamlError(`Unterminated quoted string: ${value}${hint}`, lineNo);
   }
-  if (value.slice(end + 1).trim() !== "") {
+  const after = value.slice(end + 1).trim();
+  if (after !== "" && after[0] !== "#") {
     throw new YamlError(`Unexpected text after closing quote: ${value}`, lineNo);
   }
 
@@ -248,14 +262,16 @@ function parseQuoted(value, lineNo) {
 function parseFlowSequence(value, lineNo) {
   const close = findFlowClose(value);
   if (close === -1) throw new YamlError(`Unterminated flow sequence: ${value}`, lineNo);
-  if (value.slice(close + 1).trim() !== "") throw new YamlError(`Unexpected text after "]": ${value}`, lineNo);
+  const after = value.slice(close + 1).trim();
+  if (after !== "" && after[0] !== "#") throw new YamlError(`Unexpected text after "]": ${value}`, lineNo);
   return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo));
 }
 
 function parseFlowMapping(value, lineNo) {
   const close = findFlowClose(value);
   if (close === -1) throw new YamlError(`Unterminated flow mapping: ${value}`, lineNo);
-  if (value.slice(close + 1).trim() !== "") throw new YamlError(`Unexpected text after "}": ${value}`, lineNo);
+  const after = value.slice(close + 1).trim();
+  if (after !== "" && after[0] !== "#") throw new YamlError(`Unexpected text after "}": ${value}`, lineNo);
   const map = {};
   for (const pair of splitFlow(value.slice(1, close))) {
     const colon = findKeyColon(pair);
@@ -326,7 +342,9 @@ function isSequenceMarker(content) {
 }
 
 function isBlockScalarHeader(rest) {
-  return /^[>|][+-]?$/.test(rest);
+  // ">" or "|" with optional chomping/keep indicator and an optional trailing
+  // comment (e.g. "description: > # note").
+  return /^[>|][+-]?\d*(\s+#.*)?$/.test(rest);
 }
 
 // Index of the colon that terminates a mapping key (a ":" followed by a space

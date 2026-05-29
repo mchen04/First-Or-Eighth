@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -32,6 +32,9 @@ console.log("Screenshot WebP assets generated.");
 
 function generateSet(game) {
   const source = fromRoot(game.screenshot.fallback);
+  if (!existsSync(source)) {
+    fail(`Missing source capture for ${game.name}: ${game.screenshot.fallback} (add a 1440x900 PNG there)`);
+  }
 
   for (const [kind, width, height] of contracts) {
     const target = fromRoot(game.screenshot[kind]);

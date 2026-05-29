@@ -12,8 +12,6 @@
   align-items: safe center;
   justify-content: center;
   padding: clamp(16px, 4vh, 48px);
-  overflow: auto;
-  overscroll-behavior: contain;
 }
 
 .detail-scrim {
@@ -103,12 +101,21 @@
   flex-direction: column;
 }
 
+/* Essentials (eyebrow/title/tagline/tags/builders) are pinned above the scroll
+   region so they can never scroll out of view, no matter how many builders a
+   game has. Only the description scrolls. */
+.detail-header {
+  flex: 0 0 auto;
+  padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 0;
+}
+
 .detail-scroll {
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  padding: 14px clamp(20px, 3vw, 32px) 4px;
 }
 
 /* Fade the bottom edge only while the description overflows and is not scrolled
@@ -116,10 +123,6 @@
 .detail-scroll.show-fade {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
-}
-
-.detail-content {
-  padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 6px;
 }
 
 .eyebrow {
@@ -209,8 +212,13 @@
   text-transform: uppercase;
 }
 
+.credit-ext {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 .detail-desc {
-  margin: 16px 0 2px;
+  margin: 0;
   color: var(--text-dim);
   font-size: 14.5px;
   line-height: 1.6;
@@ -224,6 +232,11 @@
   padding: 14px clamp(20px, 3vw, 32px);
   border-top: 1px solid var(--border);
   background: rgba(8, 9, 16, 0.6);
+}
+
+/* WIP games have only two actions (Follow on GitHub + Copy link). */
+.detail-actions.is-duo {
+  grid-template-columns: 1fr auto;
 }
 
 .button {
@@ -260,6 +273,11 @@
   background: transparent;
   box-shadow: none;
   color: var(--text);
+}
+
+.button-secondary.is-copied {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
 }
 
 .button:disabled,
@@ -304,7 +322,7 @@
     height: clamp(110px, 20vh, 160px);
   }
 
-  .detail-content {
+  .detail-header {
     padding-top: 14px;
   }
 
@@ -364,7 +382,7 @@
   }
 
   /* Reserve clearance for the floating close button and let long titles wrap. */
-  .detail-content {
+  .detail-header {
     padding-right: 60px;
   }
 
@@ -396,7 +414,7 @@
     min-height: 120px;
   }
 
-  .detail-content {
+  .detail-header {
     padding-top: 14px;
   }
 

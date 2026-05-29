@@ -236,7 +236,11 @@ function renderBackground() {
 
 function renderResults() {
   const host = document.querySelector("#game-results");
-  if (host) host.innerHTML = resultsMarkup();
+  if (!host) return;
+  const list = filteredGames();
+  host.innerHTML = gridMarkup(list);
+  const status = document.querySelector("[data-results-status]");
+  if (status) status.textContent = `${list.length} ${list.length === 1 ? "game" : "games"}`;
 }
 
 function renderOverlay() {
@@ -261,12 +265,18 @@ function renderOverlay() {
 
   host.innerHTML = detailOverlay(game);
   host.dataset.gameId = game.id;
-  requestAnimationFrame(() => {
-    host.querySelector(".detail-overlay")?.classList.add("is-open");
-    syncScrollAffordance(host);
-  });
 
-  if (wasOpen) focusInto(host.querySelector(".detail-panel"));
+  // Commit the closed state with a forced reflow, then flip to open so the
+  // enter transition runs. This is deterministic (unlike rAF, which can be
+  // throttled) and guarantees the panel ends in its visible position.
+  const overlay = host.querySelector(".detail-overlay");
+  if (overlay) {
+    void overlay.offsetWidth;
+    overlay.classList.add("is-open");
+  }
+  syncScrollAffordance(host);
+
+  if (wasOpen) host.querySelector(".detail-panel")?.focus({ preventScroll: true });
 }
 
 // Show a bottom fade on the description region only while it actually overflows
@@ -354,7 +364,10 @@ function syncShellState() {
   }
 
   for (const link of document.querySelectorAll("[data-route]")) {
-    link.classList.toggle("is-active", link.dataset.route === routeId());
+    const active = link.dataset.route === routeId();
+    link.classList.toggle("is-active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   }
 
   syncScrollLock(overlayActive);
@@ -400,7 +413,11 @@ function syncLayerFocus(layer) {
   }
 
   if (layer && layer !== activeLayer) {
-    focusInto(layerElement(layer));
+    // The detail panel is a labelled dialog (role + aria-labelledby), so focus
+    // the container itself to announce the game title; the drawer focuses its
+    // first link.
+    if (layer === "detail") layerElement(layer)?.focus({ preventScroll: true });
+    else focusInto(layerElement(layer));
   } else if (!layer && activeLayer) {
     // Restore focus to the trigger, falling back to the main content so focus
     // never lands on <body> if the trigger was removed or inert-ed.
@@ -500,7 +517,7 @@ function topbar() {
 
 function navLink(id, label, href, action = "") {
   const active = id === routeId();
-  return `<a class="${active ? "is-active" : ""}" href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
+  return `<a class="${active ? "is-active" : ""}"${active ? ` aria-current="page"` : ""} href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
 }
 
 function footer() {
@@ -553,6 +570,7 @@ function libraryPage() {
 
       ${genres.length > 2 ? chipRow(genres) : ""}
 
+      <span class="sr-only" data-results-status role="status" aria-live="polite" aria-atomic="true"></span>
       <div class="game-results" id="game-results">${resultsMarkup()}</div>
     </main>
   `;
@@ -579,7 +597,10 @@ function syncGenreChips() {
 }
 
 function resultsMarkup() {
-  const list = filteredGames();
+  return gridMarkup(filteredGames());
+}
+
+function gridMarkup(list) {
   return list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState();
 }
 
@@ -677,24 +698,25 @@ function detailOverlay(game) {
         </div>
 
         <div class="detail-body">
-          <div class="detail-scroll" tabindex="0" role="region" aria-label="${escapeAttr(game.name)} details">
-            <div class="detail-content">
-              <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
-              <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
-              <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
-              <div class="detail-tags">
-                <span class="tag">${escapeHtml(game.genre)}</span>
-                <span class="tag">${escapeHtml(game.year)}</span>
-              </div>
-              <div class="detail-credits" role="group" aria-label="Built by">
-                ${creditPill(game.creator, "Creator")}
-                ${game.editors.map((id) => creditPill(id, "Editor")).join("")}
-              </div>
-              <p class="detail-desc">${escapeHtml(game.description)}</p>
+          <div class="detail-header">
+            <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
+            <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
+            <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
+            <div class="detail-tags">
+              <span class="tag">${escapeHtml(game.genre)}</span>
+              <span class="tag">${escapeHtml(game.year)}</span>
+            </div>
+            <div class="detail-credits" role="group" aria-label="Built by">
+              ${creditPill(game.creator, "Creator")}
+              ${game.editors.map((id) => creditPill(id, "Editor")).join("")}
             </div>
           </div>
 
-          <div class="detail-actions">
+          <div class="detail-scroll" tabindex="0" role="region" aria-label="${escapeAttr(game.name)} description">
+            <p class="detail-desc">${escapeHtml(game.description)}</p>
+          </div>
+
+          <div class="detail-actions ${isWip ? "is-duo" : ""}">
             ${isWip
               ? `<a class="button" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">Follow on GitHub</a>`
               : `${playButton(game, "Play")}
@@ -712,10 +734,11 @@ function creditPill(id, role) {
   const person = creators[id];
   if (!person) return "";
   return `
-    <a class="credit-pill" href="${escapeAttr(safeUrl(person.githubUrl))}" target="_blank" rel="noreferrer noopener">
+    <a class="credit-pill" href="${escapeAttr(safeUrl(person.githubUrl))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${person.name}, ${role} — opens GitHub in a new tab`)}">
       <span class="person-dot" style="--person:${escapeAttr(safeColor(person.color))}" aria-hidden="true"></span>
       <span class="credit-name">${escapeHtml(person.name)}</span>
       <span class="credit-role">${escapeHtml(role)}</span>
+      <span class="credit-ext" aria-hidden="true">↗</span>
     </a>
   `;
 }
@@ -782,7 +805,7 @@ function thumb(game, big = false) {
   return `
     <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="${accentStyle(game.accent)}">
       ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
-      ${image ? `<span class="thumb-tag">Live capture</span>` : `<span class="thumb-tag" aria-hidden="true">[ thumbnail ]</span>`}
+      <span class="thumb-tag" aria-hidden="true">${image ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
   `;
 }
@@ -830,18 +853,48 @@ async function copyCurrentLink(button) {
   };
   const reset = () => {
     window.clearTimeout(copyResetTimer);
-    copyResetTimer = window.setTimeout(() => { button.textContent = "Copy link"; }, 1200);
+    copyResetTimer = window.setTimeout(() => {
+      button.textContent = "Copy link";
+      button.classList.remove("is-copied");
+    }, 1200);
+  };
+  const succeed = () => {
+    button.textContent = "Copied";
+    button.classList.add("is-copied");
+    announce("Link copied");
+    reset();
   };
 
   try {
     await navigator.clipboard.writeText(location.href);
-    button.textContent = "Copied";
-    announce("Link copied");
-    reset();
+    succeed();
   } catch {
-    button.textContent = "Copy failed";
-    announce("Copy failed");
-    reset();
+    if (legacyCopy(location.href)) {
+      succeed();
+    } else {
+      button.textContent = "Copy failed";
+      announce("Copy failed");
+      reset();
+    }
+  }
+}
+
+// Fallback for non-secure origins / older browsers where the async Clipboard
+// API is unavailable.
+function legacyCopy(text) {
+  try {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const ok = document.execCommand("copy");
+    field.remove();
+    return ok;
+  } catch {
+    return false;
   }
 }
 
