@@ -77,13 +77,16 @@ function currentHash() {
   return location.hash || "#/";
 }
 
-// If the URL points at a game that does not resolve (unknown/empty id), repair
-// the address bar so it stops lying about the view. replaceState avoids both a
-// spurious history entry and re-triggering hashchange.
+// Repair the address bar so it always reflects the resolved view: an
+// unresolvable game, an unknown route, or trailing junk segments
+// (#/game/x/extra) are rewritten to the canonical hash. replaceState avoids a
+// spurious history entry and does not re-trigger hashchange. A bare/empty home
+// hash is left alone so a clean URL stays clean.
 function normalizeUnresolvedHash() {
-  if (location.hash.startsWith("#/game") && state.route.name !== "game") {
-    history.replaceState(null, "", "#/");
-  }
+  const route = state.route;
+  const canonical = route.name === "game" ? `#/game/${route.id}` : route.name === "creators" ? "#/creators" : "#/";
+  if (canonical === "#/" && (location.hash === "" || location.hash === "#" || location.hash === "#/")) return;
+  if (location.hash !== canonical) history.replaceState(null, "", canonical);
 }
 
 function onHashChange() {
@@ -287,26 +290,23 @@ function renderOverlay() {
   if (wasOpen) host.querySelector(".detail-panel")?.focus({ preventScroll: true });
 }
 
-// Show a bottom fade on a scrollable region only while it actually overflows
-// and is not scrolled to the end, so clipped text reads as scrollable. Applies
-// to the description and (only when it has to shrink) the pinned header.
+// Show a bottom fade on the description region only while it actually overflows
+// and is not scrolled to the end, so clipped text reads as scrollable. Also
+// make it a tab stop only when it can scroll.
 function syncScrollAffordance(host) {
-  for (const region of host.querySelectorAll(".detail-header, .detail-scroll")) {
-    const isDesc = region.classList.contains("detail-scroll");
-    const update = () => {
-      const overflowing = region.scrollHeight - region.clientHeight > 1;
-      const atBottom = region.scrollTop + region.clientHeight >= region.scrollHeight - 1;
-      region.classList.toggle("show-fade", overflowing && !atBottom);
-      // The description has no focusable children, so make it a tab stop when it
-      // overflows; the header scrolls via its credit links and needs none.
-      if (isDesc) region.tabIndex = overflowing ? 0 : -1;
-    };
-    update();
-    region.addEventListener("scroll", update, { passive: true });
-    // Recompute after font-swap reflow and on rotation/resize. The observer is
-    // GC'd with the node when the overlay's innerHTML is replaced/cleared.
-    if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(region);
-  }
+  const scroll = host.querySelector(".detail-scroll");
+  if (!scroll) return;
+  const update = () => {
+    const overflowing = scroll.scrollHeight - scroll.clientHeight > 1;
+    const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+    scroll.classList.toggle("show-fade", overflowing && !atBottom);
+    scroll.tabIndex = overflowing ? 0 : -1;
+  };
+  update();
+  scroll.addEventListener("scroll", update, { passive: true });
+  // Recompute after font-swap reflow and on rotation/resize. The observer is
+  // GC'd with the node when the overlay's innerHTML is replaced/cleared.
+  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(scroll);
 }
 
 // Play the close transition, then tear down the DOM — unless a new overlay
@@ -604,9 +604,9 @@ function libraryPage() {
 
 function chipRow(genres) {
   return `
-    <section class="chip-row" role="radiogroup" aria-label="Genre filters">
+    <section class="chip-row" role="toolbar" aria-label="Genre filters">
       ${genres.map((genre) => `
-        <button class="chip ${state.genre === genre ? "is-active" : ""}" role="radio" aria-checked="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
+        <button class="chip ${state.genre === genre ? "is-active" : ""}" aria-pressed="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
           ${escapeHtml(genre)}
         </button>
       `).join("")}
@@ -618,7 +618,7 @@ function syncGenreChips() {
   for (const chip of document.querySelectorAll(".chip[data-genre]")) {
     const on = chip.dataset.genre === state.genre;
     chip.classList.toggle("is-active", on);
-    chip.setAttribute("aria-checked", String(on));
+    chip.setAttribute("aria-pressed", String(on));
   }
 }
 
@@ -657,7 +657,7 @@ function byGameName(a, b) {
 }
 
 function option(value, label) {
-  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>${label}</option>`;
+  return `<option value="${escapeAttr(value)}" ${state.sort === value ? "selected" : ""}>${escapeHtml(label)}</option>`;
 }
 
 function gameCard(game) {

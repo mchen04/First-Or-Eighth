@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { loadDataSync, fromRoot } from "../src/lib/node.mjs";
-import { SCREENSHOT_CONTRACT } from "../src/lib/data.mjs";
+import { SCREENSHOT_CONTRACT, validateData } from "../src/lib/data.mjs";
 
 // Regenerates the responsive WebP variants for every game that has a capture.
 // Drop a fresh 1440x900 PNG at assets/<id>.png and run `npm run assets`; the
@@ -17,7 +17,11 @@ const contracts = Object.entries(SCREENSHOT_CONTRACT)
 ensureCommand("sips", ["--version"]);
 ensureCommand("cwebp", ["-version"]);
 
-const { games } = loadDataSync();
+const data = loadDataSync();
+const dataErrors = validateData(data);
+if (dataErrors.length) fail(`Refusing to generate assets — invalid data:\n- ${dataErrors.join("\n- ")}`);
+
+const { games } = data;
 const workspace = mkdtempSync(join(tmpdir(), "first-eighth-assets-"));
 
 try {

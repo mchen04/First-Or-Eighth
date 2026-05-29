@@ -140,11 +140,7 @@ function verifyScreenshotSet(game) {
       fail(`${game.name} ${kind} screenshot is missing: ${file}`);
       continue;
     }
-    try {
-      assertImageContract(fromRoot(file), contract, `${game.name} ${kind}`, fail);
-    } catch (error) {
-      fail(`${game.name} ${kind} screenshot could not be validated: ${error.message}`);
-    }
+    assertImageContract(fromRoot(file), contract, `${game.name} ${kind}`, fail);
   }
 }
 

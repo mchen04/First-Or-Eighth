@@ -265,7 +265,7 @@ function parseQuoted(value, lineNo) {
 
 function parseFlowSequence(value, lineNo) {
   const close = findFlowClose(value);
-  if (close === -1) throw new YamlError(`Unterminated flow sequence: ${value}`, lineNo);
+  if (close === -1) throw new YamlError(`Unterminated flow sequence (it must be on one line, e.g. [michael, justin]): ${value}`, lineNo);
   const after = value.slice(close + 1).trim();
   if (after !== "" && after[0] !== "#") throw new YamlError(`Unexpected text after "]": ${value}`, lineNo);
   return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo));

@@ -50,7 +50,7 @@ function normalizeGames(raw) {
       url: game?.url ?? "",
       sourceUrl: game?.source,
       creator: game?.creator,
-      editors: Array.isArray(editorsValue) ? editorsValue : [],
+      editors: Array.isArray(editorsValue) ? editorsValue.map(String) : [],
       genre: text(game?.genre),
       year: text(game?.year),
       accent: game?.accent,
@@ -69,9 +69,12 @@ function normalizeGames(raw) {
 
 // Numbers/booleans from YAML (e.g. `name: 2048`) are coerced to text so they
 // behave like every other string downstream (sorting, rendering) instead of
-// crashing; null/undefined are preserved so validation can flag a missing field.
+// crashing. null/undefined are preserved, and a flow sequence/mapping written
+// where text was expected (an array/object) becomes undefined so validation
+// flags the field as missing rather than stringifying it to garbage.
 function text(value) {
-  return value == null ? value : String(value);
+  if (value == null || typeof value === "object") return undefined;
+  return String(value);
 }
 
 function screenshotFor(game) {

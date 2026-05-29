@@ -101,14 +101,12 @@
   flex-direction: column;
 }
 
-/* Essentials (eyebrow/title/tagline/tags/builders) sit above the scrolling
-   description. The action bar is the only pinned region (flex: 0 0 auto), so it
-   is never clipped; the description absorbs shrink first, and the header yields
-   (scrolling, with a fade) only as a last resort on extreme viewports. */
+/* Essentials (eyebrow/title/tagline/tags/builders) sit above the description
+   and never shrink, so they stay fully visible without scrolling. The
+   description is the only flexible region (flex-basis 0 → it claims no
+   intrinsic height and yields first), and the action bar is pinned. */
 .detail-header {
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+  flex: 0 0 auto;
   padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 0;
 }
 
@@ -126,9 +124,8 @@
   outline-offset: -2px;
 }
 
-/* Fade the bottom edge only while a region overflows and is not scrolled to the
-   end, so clipped text reads as scrollable rather than truncated. */
-.detail-header.show-fade,
+/* Fade the bottom edge only while the description overflows and is not scrolled
+   to the end, so clipped text reads as scrollable rather than truncated. */
 .detail-scroll.show-fade {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
