@@ -20,7 +20,9 @@ export async function loadData() {
   const data = buildData(rawCreators, rawGames);
   const errors = validateData(data);
   if (errors.length) {
-    console.error(`First or Eighth data has ${errors.length} validation error(s):\n- ${errors.join("\n- ")}`);
+    // npm run check is the pre-deploy gate; reaching here means invalid data
+    // shipped. Fail loudly (boot() shows it) rather than render "null"/"undefined".
+    throw new Error(`Game data has ${errors.length} validation error(s):\n- ${errors.join("\n- ")}`);
   }
 
   cache = data;

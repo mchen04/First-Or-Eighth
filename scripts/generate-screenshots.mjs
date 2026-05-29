@@ -3,15 +3,16 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { loadDataSync, fromRoot } from "../src/lib/node.mjs";
+import { SCREENSHOT_CONTRACT } from "../src/lib/data.mjs";
 
 // Regenerates the responsive WebP variants for every game that has a capture.
 // Drop a fresh 1440x900 PNG at assets/<id>.png and run `npm run assets`; the
-// card (640x400) and detail (1200x750) WebPs are derived from it.
+// card (640x400) and detail (1200x750) WebPs are derived from it. Dimensions
+// come from the shared contract so they cannot drift from the checks.
 
-const contracts = [
-  ["card", 640, 400],
-  ["detail", 1200, 750]
-];
+const contracts = Object.entries(SCREENSHOT_CONTRACT)
+  .filter(([kind]) => kind !== "fallback")
+  .map(([kind, contract]) => [kind, contract.width, contract.height]);
 
 ensureCommand("sips", ["--version"]);
 ensureCommand("cwebp", ["-version"]);

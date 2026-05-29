@@ -101,11 +101,14 @@
   flex-direction: column;
 }
 
-/* Essentials (eyebrow/title/tagline/tags/builders) are pinned above the scroll
-   region so they can never scroll out of view, no matter how many builders a
-   game has. Only the description scrolls. */
+/* Essentials (eyebrow/title/tagline/tags/builders) sit above the scrolling
+   description. The action bar is the only pinned region (flex: 0 0 auto), so it
+   is never clipped; the description absorbs shrink first, and the header yields
+   (scrolling, with a fade) only as a last resort on extreme viewports. */
 .detail-header {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 0;
 }
 
@@ -123,8 +126,9 @@
   outline-offset: -2px;
 }
 
-/* Fade the bottom edge only while the description overflows and is not scrolled
-   to the end, so clipped text reads as scrollable rather than truncated. */
+/* Fade the bottom edge only while a region overflows and is not scrolled to the
+   end, so clipped text reads as scrollable rather than truncated. */
+.detail-header.show-fade,
 .detail-scroll.show-fade {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
@@ -395,13 +399,9 @@
     min-width: 0;
   }
 
-  /* Reserve clearance for the floating close button and let long titles wrap.
-     The header may shrink/scroll here so the pinned action bar (fixed height)
-     is never clipped on short landscape viewports. */
+  /* Reserve clearance for the floating close button (the shrink/scroll
+     behavior that keeps the pinned action bar visible is now in the base rule). */
   .detail-header {
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow-y: auto;
     padding-right: 60px;
   }
 

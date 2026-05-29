@@ -98,11 +98,16 @@ function onHashChange() {
   state.route = next;
   state.navOpen = false;
   normalizeUnresolvedHash();
+
+  // Closing the overlay back to the page it was opened from preserves that
+  // page's scroll position (via the scroll lock). Any other top-level
+  // navigation — including opening a game elsewhere then leaving — starts at
+  // the top, overriding the lock's restore.
+  const returningToOrigin = previous === "game" && next.name !== "game" && currentHash() === detailReturn;
+
   render();
 
-  // Top-level page navigations start at the top; opening/closing the detail
-  // overlay preserves the background scroll position via the scroll lock.
-  if (next.name !== "game" && previous !== "game") {
+  if (next.name !== "game" && !returningToOrigin) {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 }
@@ -282,23 +287,26 @@ function renderOverlay() {
   if (wasOpen) host.querySelector(".detail-panel")?.focus({ preventScroll: true });
 }
 
-// Show a bottom fade on the description region only while it actually overflows
-// and is not scrolled to the end, so clipped text reads as scrollable.
+// Show a bottom fade on a scrollable region only while it actually overflows
+// and is not scrolled to the end, so clipped text reads as scrollable. Applies
+// to the description and (only when it has to shrink) the pinned header.
 function syncScrollAffordance(host) {
-  const scroll = host.querySelector(".detail-scroll");
-  if (!scroll) return;
-  const update = () => {
-    const overflowing = scroll.scrollHeight - scroll.clientHeight > 1;
-    const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
-    scroll.classList.toggle("show-fade", overflowing && !atBottom);
-    // Only a tab stop when there is something to scroll to.
-    scroll.tabIndex = overflowing ? 0 : -1;
-  };
-  update();
-  scroll.addEventListener("scroll", update, { passive: true });
-  // Recompute after font-swap reflow and on rotation/resize. The observer is
-  // GC'd with the node when the overlay's innerHTML is replaced/cleared.
-  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(scroll);
+  for (const region of host.querySelectorAll(".detail-header, .detail-scroll")) {
+    const isDesc = region.classList.contains("detail-scroll");
+    const update = () => {
+      const overflowing = region.scrollHeight - region.clientHeight > 1;
+      const atBottom = region.scrollTop + region.clientHeight >= region.scrollHeight - 1;
+      region.classList.toggle("show-fade", overflowing && !atBottom);
+      // The description has no focusable children, so make it a tab stop when it
+      // overflows; the header scrolls via its credit links and needs none.
+      if (isDesc) region.tabIndex = overflowing ? 0 : -1;
+    };
+    update();
+    region.addEventListener("scroll", update, { passive: true });
+    // Recompute after font-swap reflow and on rotation/resize. The observer is
+    // GC'd with the node when the overlay's innerHTML is replaced/cleared.
+    if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(region);
+  }
 }
 
 // Play the close transition, then tear down the DOM — unless a new overlay
@@ -472,8 +480,14 @@ function trapFocus(event, container) {
   }
 }
 
+const INERT_SUPPORTED = typeof HTMLElement !== "undefined" && "inert" in HTMLElement.prototype;
+
 function setInert(selector, inert) {
-  document.querySelector(selector)?.toggleAttribute("inert", inert);
+  const element = document.querySelector(selector);
+  if (!element) return;
+  element.toggleAttribute("inert", inert);
+  // Fallback for engines without inert (older Safari): hide from AT too.
+  if (!INERT_SUPPORTED) element.toggleAttribute("aria-hidden", inert);
 }
 
 // ---------------------------------------------------------------------------
@@ -529,7 +543,7 @@ function topbar() {
 
 function navLink(id, label, href, action = "") {
   const active = id === routeId();
-  return `<a class="${active ? "is-active" : ""}"${active ? ` aria-current="page"` : ""} href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
+  return `<a class="${active ? "is-active" : ""}"${active ? ` aria-current="page"` : ""} href="${escapeAttr(href)}" data-route="${escapeAttr(id)}" ${action ? `data-action="${escapeAttr(action)}"` : ""}>${escapeHtml(label)}</a>`;
 }
 
 function footer() {
@@ -590,9 +604,9 @@ function libraryPage() {
 
 function chipRow(genres) {
   return `
-    <section class="chip-row" aria-label="Genre filters">
+    <section class="chip-row" role="radiogroup" aria-label="Genre filters">
       ${genres.map((genre) => `
-        <button class="chip ${state.genre === genre ? "is-active" : ""}" aria-pressed="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
+        <button class="chip ${state.genre === genre ? "is-active" : ""}" role="radio" aria-checked="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
           ${escapeHtml(genre)}
         </button>
       `).join("")}
@@ -604,7 +618,7 @@ function syncGenreChips() {
   for (const chip of document.querySelectorAll(".chip[data-genre]")) {
     const on = chip.dataset.genre === state.genre;
     chip.classList.toggle("is-active", on);
-    chip.setAttribute("aria-pressed", String(on));
+    chip.setAttribute("aria-checked", String(on));
   }
 }
 
@@ -839,7 +853,7 @@ function playButton(game, label) {
 }
 
 function cardPlayLink(game) {
-  if (!game.url) return `<span class="card-link is-disabled">Not live</span>`;
+  if (!game.url) return `<button class="card-link is-disabled" disabled>Not live</button>`;
   return `<a class="card-link is-primary" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
 }
 
@@ -926,7 +940,9 @@ function renderFatal(error) {
 // ---------------------------------------------------------------------------
 
 function routeId() {
-  return state.route.name === "game" ? "home" : state.route.name;
+  // On a game route, highlight the nav entry for the page the overlay sits over.
+  if (state.route.name === "game") return mountedPage === "creators" ? "creators" : "home";
+  return state.route.name;
 }
 
 function sortedCreators() {

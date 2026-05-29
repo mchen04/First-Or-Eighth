@@ -67,7 +67,7 @@ function parseMapping(ctx, indent) {
     // A line indented deeper than the mapping that was not consumed by a block
     // value is orphaned — fail loudly instead of silently dropping it and every
     // field after it.
-    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block: ${line.trim()}`, ctx.i);
+    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block (for a multi-line value, start it with "> " or "| " after the colon): ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     const colon = findKeyColon(content);
@@ -80,6 +80,9 @@ function parseMapping(ctx, indent) {
     }
 
     const key = parseKey(content.slice(0, colon), ctx.i);
+    if (Object.prototype.hasOwnProperty.call(map, key)) {
+      throw new YamlError(`Duplicate key "${key}" in this block (did you forget to rename a copied entry?)`, ctx.i);
+    }
     const rest = content.slice(colon + 1).trim();
     ctx.i++;
 
@@ -105,7 +108,7 @@ function parseSequence(ctx, indent) {
     const line = ctx.lines[ctx.i];
     const ind = indentOf(line, ctx.i);
     if (ind < indent) break;
-    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block: ${line.trim()}`, ctx.i);
+    if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block (for a multi-line value, start it with "> " or "| " after the colon): ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
     if (!isSequenceMarker(content)) break;
@@ -277,7 +280,9 @@ function parseFlowMapping(value, lineNo) {
   for (const pair of splitFlow(value.slice(1, close))) {
     const colon = findKeyColon(pair);
     if (colon === -1) throw new YamlError(`Invalid flow mapping entry: ${pair}`, lineNo);
-    map[parseKey(pair.slice(0, colon), lineNo)] = parseScalar(pair.slice(colon + 1).trim(), lineNo);
+    const key = parseKey(pair.slice(0, colon), lineNo);
+    if (Object.prototype.hasOwnProperty.call(map, key)) throw new YamlError(`Duplicate key "${key}" in flow mapping`, lineNo);
+    map[key] = parseScalar(pair.slice(colon + 1).trim(), lineNo);
   }
   return map;
 }

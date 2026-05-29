@@ -77,7 +77,9 @@ function text(value) {
 function screenshotFor(game) {
   const flag = game?.screenshot;
   const disabled = flag === false || (typeof flag === "string" && ["false", "no", "off"].includes(flag.trim().toLowerCase()));
-  if (disabled || !game?.id) return null;
+  // Only derive asset paths from a well-formed id, so a malformed id can never
+  // become a stray srcset URL (validation also rejects it).
+  if (disabled || typeof game?.id !== "string" || !/^[a-z0-9-]+$/.test(game.id)) return null;
   const base = `assets/${game.id}`;
   return Object.fromEntries(
     Object.entries(SCREENSHOT_CONTRACT).map(([kind, contract]) => [kind, `${base}${contract.suffix}`])
@@ -125,6 +127,7 @@ export function validateData({ creators, games }) {
     if (game.url && !isUrl(game.url)) errors.push(`${label} has an invalid play URL: ${game.url}`);
     if (game.status === "Live" && !game.url) errors.push(`${label} is Live but has no play URL`);
     if (game.status === "Live" && !game.screenshot) errors.push(`${label} is Live but has no screenshot`);
+    if (game.status === "WIP" && game.url) errors.push(`${label} is WIP but still has a play URL (remove it until Live): ${game.url}`);
   }
 
   return errors;
