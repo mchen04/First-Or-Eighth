@@ -45,17 +45,17 @@ function normalizeGames(raw) {
     const editorsValue = game?.editors;
     const normalized = {
       id: game?.id,
-      name: game?.name,
+      name: text(game?.name),
       status: game?.status,
       url: game?.url ?? "",
       sourceUrl: game?.source,
       creator: game?.creator,
       editors: Array.isArray(editorsValue) ? editorsValue : [],
-      genre: game?.genre,
-      year: game?.year == null ? game?.year : String(game.year),
+      genre: text(game?.genre),
+      year: text(game?.year),
       accent: game?.accent,
-      tagline: game?.tagline,
-      description: game?.description,
+      tagline: text(game?.tagline),
+      description: text(game?.description),
       screenshot: screenshotFor(game)
     };
     // Surface a hand-edit that wrote editors as something other than a list, so
@@ -67,14 +67,19 @@ function normalizeGames(raw) {
   });
 }
 
+// Numbers/booleans from YAML (e.g. `name: 2048`) are coerced to text so they
+// behave like every other string downstream (sorting, rendering) instead of
+// crashing; null/undefined are preserved so validation can flag a missing field.
+function text(value) {
+  return value == null ? value : String(value);
+}
+
 function screenshotFor(game) {
   if (game?.screenshot === false || !game?.id) return null;
   const base = `assets/${game.id}`;
-  return {
-    card: `${base}${SCREENSHOT_CONTRACT.card.suffix}`,
-    detail: `${base}${SCREENSHOT_CONTRACT.detail.suffix}`,
-    fallback: `${base}${SCREENSHOT_CONTRACT.fallback.suffix}`
-  };
+  return Object.fromEntries(
+    Object.entries(SCREENSHOT_CONTRACT).map(([kind, contract]) => [kind, `${base}${contract.suffix}`])
+  );
 }
 
 // Returns an array of human-readable error strings; empty means valid.

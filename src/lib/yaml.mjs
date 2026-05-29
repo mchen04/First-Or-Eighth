@@ -228,7 +228,10 @@ function parseQuoted(value, lineNo) {
     }
   }
 
-  if (end === -1) throw new YamlError(`Unterminated quoted string: ${value}`, lineNo);
+  if (end === -1) {
+    const hint = quote === "'" ? ' — a value starting with an apostrophe must be wrapped in double quotes, e.g. "\'em all"' : "";
+    throw new YamlError(`Unterminated quoted string: ${value}${hint}`, lineNo);
+  }
   if (value.slice(end + 1).trim() !== "") {
     throw new YamlError(`Unexpected text after closing quote: ${value}`, lineNo);
   }
@@ -243,14 +246,16 @@ function parseQuoted(value, lineNo) {
 }
 
 function parseFlowSequence(value, lineNo) {
-  const close = value.lastIndexOf("]");
+  const close = findFlowClose(value);
   if (close === -1) throw new YamlError(`Unterminated flow sequence: ${value}`, lineNo);
+  if (value.slice(close + 1).trim() !== "") throw new YamlError(`Unexpected text after "]": ${value}`, lineNo);
   return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo));
 }
 
 function parseFlowMapping(value, lineNo) {
-  const close = value.lastIndexOf("}");
+  const close = findFlowClose(value);
   if (close === -1) throw new YamlError(`Unterminated flow mapping: ${value}`, lineNo);
+  if (value.slice(close + 1).trim() !== "") throw new YamlError(`Unexpected text after "}": ${value}`, lineNo);
   const map = {};
   for (const pair of splitFlow(value.slice(1, close))) {
     const colon = findKeyColon(pair);
@@ -258,6 +263,29 @@ function parseFlowMapping(value, lineNo) {
     map[parseKey(pair.slice(0, colon), lineNo)] = parseScalar(pair.slice(colon + 1).trim(), lineNo);
   }
   return map;
+}
+
+// Index of the bracket/brace that closes the flow collection that opens at
+// value[0], honoring nesting and quotes (so "[" or "}" inside a quoted item
+// does not throw off the match), or -1 if unterminated.
+function findFlowClose(value) {
+  let depth = 0;
+  let inSingle = false;
+  let inDouble = false;
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (char === '"' && !inSingle) inDouble = !inDouble;
+    else if (char === "'" && !inDouble) inSingle = !inSingle;
+    else if (!inSingle && !inDouble) {
+      if (char === "[" || char === "{") depth++;
+      else if (char === "]" || char === "}") {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+  }
+  return -1;
 }
 
 function splitFlow(inner) {

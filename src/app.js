@@ -281,6 +281,9 @@ function syncScrollAffordance(host) {
   };
   update();
   scroll.addEventListener("scroll", update, { passive: true });
+  // Recompute after font-swap reflow and on rotation/resize. The observer is
+  // GC'd with the node when the overlay's innerHTML is replaced/cleared.
+  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(scroll);
 }
 
 // Play the close transition, then tear down the DOM — unless a new overlay
@@ -306,6 +309,9 @@ function dismissOverlay(host) {
 
   overlay.classList.remove("is-open");
   overlay.style.pointerEvents = "none";
+  // Take the fading overlay out of the tab order and hit-testing immediately,
+  // while the background is being un-inerted in the same render pass.
+  overlay.toggleAttribute("inert", true);
 
   let done = false;
   const finish = () => {
@@ -330,7 +336,9 @@ function syncShellState() {
   const layer = currentLayer();
   const overlayActive = layer !== null;
 
-  document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
+  const navToggle = document.querySelector("[data-action='toggle-nav']");
+  navToggle?.setAttribute("aria-expanded", String(state.navOpen));
+  navToggle?.setAttribute("aria-label", state.navOpen ? "Close menu" : "Open menu");
   document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
 
   setInert(".topbar", overlayActive);
@@ -394,24 +402,29 @@ function syncLayerFocus(layer) {
   if (layer && layer !== activeLayer) {
     focusInto(layerElement(layer));
   } else if (!layer && activeLayer) {
-    if (layerReturnFocus?.isConnected && !layerReturnFocus.closest("[inert]")) {
-      layerReturnFocus.focus({ preventScroll: true });
-    }
+    // Restore focus to the trigger, falling back to the main content so focus
+    // never lands on <body> if the trigger was removed or inert-ed.
+    const target = layerReturnFocus?.isConnected && !layerReturnFocus.closest("[inert]")
+      ? layerReturnFocus
+      : document.querySelector("#view-root");
+    target?.focus({ preventScroll: true });
     layerReturnFocus = null;
   }
 
   activeLayer = layer;
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function focusInto(element) {
   if (!element || element.contains(document.activeElement)) return;
-  const focusable = element.querySelector("a[href], button:not([disabled]), input, select, [tabindex]");
+  const focusable = element.querySelector(FOCUSABLE);
   (focusable || element).focus({ preventScroll: true });
 }
 
 function trapFocus(event, container) {
   if (!container) return;
-  const focusable = [...container.querySelectorAll("a[href], button:not([disabled]), input, select")];
+  const focusable = [...container.querySelectorAll(FOCUSABLE)];
   if (!focusable.length) {
     event.preventDefault();
     container.focus({ preventScroll: true });
@@ -458,7 +471,7 @@ function topbar() {
       </nav>
       <div class="topbar-right">
         <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
-        <button class="icon-button" data-action="toggle-nav" aria-label="Open menu" aria-expanded="${state.navOpen}">
+        <button class="icon-button" data-action="toggle-nav" aria-label="${state.navOpen ? "Close menu" : "Open menu"}" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -587,7 +600,7 @@ function searchText(game) {
 
 const sorters = {
   az: byGameName,
-  newest: (a, b) => b.year.localeCompare(a.year) || byGameName(a, b),
+  newest: (a, b) => String(b.year ?? "").localeCompare(String(a.year ?? "")) || byGameName(a, b),
   creator: (a, b) => (creators[a.creator]?.name ?? "").localeCompare(creators[b.creator]?.name ?? "") || byGameName(a, b),
   status: (a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b)
 };
@@ -597,7 +610,7 @@ function byGameName(a, b) {
 }
 
 function option(value, label) {
-  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>Sort: ${label}</option>`;
+  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>${label}</option>`;
 }
 
 function gameCard(game) {
@@ -664,7 +677,7 @@ function detailOverlay(game) {
         </div>
 
         <div class="detail-body">
-          <div class="detail-scroll">
+          <div class="detail-scroll" tabindex="0" role="region" aria-label="${escapeAttr(game.name)} details">
             <div class="detail-content">
               <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
               <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
@@ -682,8 +695,10 @@ function detailOverlay(game) {
           </div>
 
           <div class="detail-actions">
-            ${playButton(game, isWip ? "Not ready yet" : `Play ${game.name}`)}
-            <a class="button button-secondary" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">GitHub</a>
+            ${isWip
+              ? `<a class="button" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">Follow on GitHub</a>`
+              : `${playButton(game, "Play")}
+            <a class="button button-secondary" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">GitHub</a>`}
             <button class="button button-secondary" data-action="copy-link">Copy link</button>
             <span class="sr-only" data-detail-status aria-live="polite" aria-atomic="true"></span>
           </div>
@@ -767,7 +782,7 @@ function thumb(game, big = false) {
   return `
     <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="${accentStyle(game.accent)}">
       ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
-      <span class="thumb-tag">${image ? "Live capture" : "[ thumbnail ]"}</span>
+      ${image ? `<span class="thumb-tag">Live capture</span>` : `<span class="thumb-tag" aria-hidden="true">[ thumbnail ]</span>`}
     </div>
   `;
 }

@@ -8,6 +8,7 @@
   inset: 0;
   z-index: 60;
   display: flex;
+  align-items: center;
   align-items: safe center;
   justify-content: center;
   padding: clamp(16px, 4vh, 48px);
@@ -241,6 +242,9 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   padding: 0 18px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
@@ -273,7 +277,7 @@
   .detail-panel {
     width: 100%;
     max-width: none;
-    max-height: 94vh;
+    max-height: 90vh;
     max-height: 94dvh;
     border-width: 1px 0 0;
     border-radius: 18px 18px 0 0;
@@ -323,14 +327,17 @@
 
 @media (orientation: landscape) and (max-height: 500px) {
   .detail-overlay {
+    align-items: center;
     align-items: safe center;
     padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
   .detail-panel {
     width: min(820px, 100%);
-    max-height: 94vh;
-    max-height: 94dvh;
+    /* Subtract the overlay's own padding + safe-area so the panel cannot exceed
+       the visible viewport and force the overlay itself to scroll. */
+    max-height: calc(94vh - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     flex-direction: row;
     border-width: 1px;
     border-radius: 14px;
@@ -356,6 +363,15 @@
     min-width: 0;
   }
 
+  /* Reserve clearance for the floating close button and let long titles wrap. */
+  .detail-content {
+    padding-right: 60px;
+  }
+
+  .detail-title {
+    overflow-wrap: anywhere;
+  }
+
   /* Keep the compact one-row action bar in landscape even when width <= 520,
      where the portrait two-row rule would otherwise win on source order. */
   .detail-actions {
@@ -366,5 +382,30 @@
 
   .detail-actions > :first-child {
     grid-column: auto;
+  }
+}
+
+/* Very short landscape (e.g. 568x320): narrow the media column and tighten
+   spacing so the builders row stays above the fold beside the description. */
+@media (orientation: landscape) and (max-height: 360px) {
+  .detail-media {
+    flex: 0 0 36%;
+  }
+
+  .detail-media .thumb.big {
+    min-height: 120px;
+  }
+
+  .detail-content {
+    padding-top: 14px;
+  }
+
+  .detail-title {
+    font-size: 22px;
+  }
+
+  .detail-tags,
+  .detail-credits {
+    margin-top: 8px;
   }
 }
