@@ -149,7 +149,7 @@ export const games = [
     url: "https://casino-topaz-gamma.vercel.app/",
     sourceUrl: "https://github.com/mchen04/Casino",
     creator: "michael",
-    editors: [],
+    editors: ["jeremy"],
     genre: "Arcade",
     year: "2026",
     accent: "#ef2d56",
