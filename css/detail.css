@@ -101,10 +101,10 @@
   flex-direction: column;
 }
 
-/* Essentials (eyebrow/title/tagline/tags/builders) sit above the description
-   and never shrink, so they stay fully visible without scrolling. The
-   description is the only flexible region (flex-basis 0 → it claims no
-   intrinsic height and yields first), and the action bar is pinned. */
+/* Essentials (eyebrow/title/tagline/tags/builders) sit above the description and
+   never shrink, so they stay fully visible without scrolling. The description is
+   the only flexible region (flex: 1 1 auto — it claims its content height, then
+   shrinks/scrolls under the panel's max-height), and the action bar is pinned. */
 .detail-header {
   flex: 0 0 auto;
   padding: clamp(18px, 2.4vw, 26px) clamp(20px, 3vw, 32px) 0;
@@ -129,6 +129,12 @@
 .detail-scroll.show-fade {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+
+/* Drop the mask while focused so the keyboard focus ring isn't clipped. */
+.detail-scroll.show-fade:focus-visible {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .eyebrow {
@@ -286,6 +292,12 @@
   color: var(--accent-2);
 }
 
+/* Stable width so a label change ("Copy link" -> "Copied"/"Copy failed") can't
+   reflow the auto-sized action columns. */
+.detail-actions [data-action="copy-link"] {
+  min-width: 11ch;
+}
+
 .button:disabled,
 .button.is-disabled {
   opacity: 0.58;
@@ -351,15 +363,6 @@
   .detail-actions > :first-child {
     grid-column: 1 / -1;
   }
-
-  /* WIP's two-button bar stays on one row. */
-  .detail-actions.is-duo {
-    grid-template-columns: 1fr auto;
-  }
-
-  .detail-actions.is-duo > :first-child {
-    grid-column: auto;
-  }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
@@ -395,13 +398,17 @@
     min-height: 160px;
   }
 
+  /* Last-resort scroll so the action bar stays reachable if a game ever has so
+     many builders that the fixed header + actions exceed this short panel
+     (real data fits, so the body never actually scrolls here). */
   .detail-body {
     flex: 1 1 auto;
     min-width: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
-  /* Reserve clearance for the floating close button (the shrink/scroll
-     behavior that keeps the pinned action bar visible is now in the base rule). */
+  /* Reserve clearance for the floating close button. */
   .detail-header {
     padding-right: 60px;
   }

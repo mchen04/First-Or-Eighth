@@ -125,15 +125,21 @@ export function validateData({ creators, games }) {
     }
     if (game.year && !/^\d{4}$/.test(game.year)) errors.push(`${label} has an invalid year (expected 4 digits): ${game.year}`);
 
-    if (!isHexColor(game.accent)) errors.push(`${label} has an invalid accent: ${game.accent}`);
-    if (!isUrl(game.sourceUrl)) errors.push(`${label} has an invalid source URL: ${game.sourceUrl}`);
-    if (game.url && !isUrl(game.url)) errors.push(`${label} has an invalid play URL: ${game.url}`);
+    if (!isHexColor(game.accent)) errors.push(`${label} has an invalid accent: ${show(game.accent)}`);
+    if (!isUrl(game.sourceUrl)) errors.push(`${label} has an invalid source URL: ${show(game.sourceUrl)}`);
+    if (game.url && !isUrl(game.url)) errors.push(`${label} has an invalid play URL: ${show(game.url)}`);
     if (game.status === "Live" && !game.url) errors.push(`${label} is Live but has no play URL`);
     if (game.status === "Live" && !game.screenshot) errors.push(`${label} is Live but has no screenshot`);
     if (game.status === "WIP" && game.url) errors.push(`${label} is WIP but still has a play URL (remove it until Live): ${game.url}`);
   }
 
   return errors;
+}
+
+// Render a value for an error message, quoting non-strings so e.g. a flow
+// sequence shows as ["a","b"] rather than misleading joined text.
+function show(value) {
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 function isUrl(value) {

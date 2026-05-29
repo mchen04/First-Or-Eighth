@@ -101,6 +101,8 @@ function onHashChange() {
   if (next.name === "game" && previous !== "game") {
     detailReturn = previous === "creators" ? "#/creators" : "#/";
     openedViaPush = true; // an in-app anchor pushed this entry; close via history.back()
+  } else if (next.name !== "game") {
+    openedViaPush = false; // left the overlay by any route; don't keep a stale flag
   }
 
   state.route = next;
@@ -530,7 +532,7 @@ function topbar() {
         ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
-        <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
+        <span class="online-pill"><span class="status-dot" aria-hidden="true"></span>${onlineCount()} online<span class="sr-only"> live playable games</span></span>
         <button class="icon-button" data-action="toggle-nav" aria-controls="mobile-drawer" aria-label="${state.navOpen ? "Close menu" : "Open menu"}" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
@@ -552,7 +554,7 @@ function topbar() {
       </button>
       ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
       <div class="drawer-foot">
-        <span class="status-dot"></span>
+        <span class="status-dot" aria-hidden="true"></span>
         ${games.length} ${games.length === 1 ? "game" : "games"} in rotation
       </div>
     </aside>
@@ -737,7 +739,7 @@ function detailOverlay(game) {
         </button>
 
         <div class="detail-media">
-          ${isWip ? wipBadge() : ""}
+          ${isWip ? wipBadge(true) : ""}
           ${thumb(game, true)}
         </div>
 
@@ -797,7 +799,7 @@ function creatorsPage() {
       <section class="library-head">
         <div>
           <h1>Builders.</h1>
-          <p>The four of us, and what we've shipped.</p>
+          <p>Us, and what we've shipped.</p>
         </div>
       </section>
       <section class="creator-grid">
@@ -890,8 +892,12 @@ function personPill(id, editorCount = 0) {
   `;
 }
 
-function wipBadge() {
-  return `<span class="wip-badge" role="img" aria-label="Work in progress"><span></span>WIP</span>`;
+function wipBadge(decorative = false) {
+  // On the card the badge is the only status cue, so it announces itself; in the
+  // detail overlay the eyebrow already says "Work in progress", so hide it.
+  return decorative
+    ? `<span class="wip-badge" aria-hidden="true"><span></span>WIP</span>`
+    : `<span class="wip-badge" role="img" aria-label="Work in progress"><span></span>WIP</span>`;
 }
 
 async function copyCurrentLink(button) {

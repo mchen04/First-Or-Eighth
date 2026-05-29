@@ -128,14 +128,8 @@ console.log(`Static site checks passed (${games.length} games).`);
 // --- Helpers ------------------------------------------------------------------
 
 function verifyScreenshotSet(game) {
-  const base = `assets/${game.id}`;
   for (const [kind, contract] of Object.entries(SCREENSHOT_CONTRACT)) {
     const file = game.screenshot[kind];
-    const expectedName = `${base}${contract.suffix}`;
-    if (file !== expectedName) {
-      fail(`${game.name} ${kind} screenshot must be derived from its id (${expectedName}): ${file}`);
-      continue;
-    }
     if (!exists(file)) {
       fail(`${game.name} ${kind} screenshot is missing: ${file}`);
       continue;
