@@ -325,7 +325,11 @@
   /* Reclaim vertical overhead so the credits row and the description keep a
      usable, scrollable area above the fold on the smallest phones. */
   .detail-media .thumb.big {
-    height: clamp(110px, 20vh, 160px);
+    height: clamp(96px, 18vh, 140px);
+  }
+
+  .detail-scroll {
+    padding-top: 10px;
   }
 
   .detail-header {

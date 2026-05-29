@@ -7,8 +7,9 @@
 //
 // It is intentionally not a full YAML 1.2 implementation, but it follows YAML's
 // rules where it matters:
-//   * A "#" that begins a line or follows whitespace starts a comment, so a
-//     value containing a literal "#" must be quoted (e.g. bio: "Autist #3.").
+//   * A "#" that begins a line is a comment; a "#" after a space in a plain
+//     value is rejected (a literal "#" must be quoted, e.g. bio: "Autist #3.").
+//     Trailing comments are allowed after quoted/flow/block-header values.
 //   * A mapping line that is not "key: value" (e.g. a missing space after the
 //     colon), or a line indented out of alignment, throws a clear error instead
 //     of silently dropping fields.
@@ -205,13 +206,15 @@ function parseScalar(value, lineNo) {
   if (first === "[") return parseFlowSequence(value, lineNo);
   if (first === "{") return parseFlowMapping(value, lineNo);
 
-  // Plain scalar: a "#" that starts the value or follows whitespace begins a
-  // comment that runs to end of line (standard YAML). A literal "#" in a value
-  // must therefore be quoted (e.g. bio: "Autist #3.").
+  // Plain scalar: a "#" that starts the value is a whole-line comment (null
+  // value). A "#" after a space would start an inline comment and silently
+  // truncate the value, so we reject it loudly — a literal "#" must be quoted
+  // (e.g. bio: "Autist #3."). Trailing comments are still allowed after quoted
+  // values, flow collections, and block-scalar headers.
   if (first === "#") return null;
-  const comment = value.search(/\s#/);
-  if (comment !== -1) value = value.slice(0, comment).trimEnd();
-  if (value === "") return null;
+  if (/\s#/.test(value)) {
+    throw new YamlError(`A "#" after a space starts a comment — wrap the value in double quotes to keep a literal "#": ${value}`, lineNo);
+  }
 
   if (value === "null" || value === "Null" || value === "NULL" || value === "~") return null;
   if (value === "true" || value === "True" || value === "TRUE") return true;

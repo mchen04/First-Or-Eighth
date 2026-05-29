@@ -5,8 +5,10 @@
 # game, copy one block, fill in the fields, and drop a screenshot at
 # assets/<id>.png (then run `npm run assets`). That's it.
 #
-# A "#" that follows a space starts a comment, so any value containing a literal
-# "#" must be wrapped in double quotes (e.g. accent: "#ff3d7f").
+# Quote any value containing a literal "#" (e.g. tagline: "Be the #1 player",
+# accent: "#ff3d7f") — an unquoted " #" starts a comment and the parser will
+# flag it. Also quote values that look like a number or true/false/null when you
+# mean them as text (e.g. name: "2048").
 #
 # Fields:
 #   id          Required. URL slug (#/game/<id>) AND the screenshot base name

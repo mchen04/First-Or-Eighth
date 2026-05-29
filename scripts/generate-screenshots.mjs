@@ -14,28 +14,35 @@ const contracts = Object.entries(SCREENSHOT_CONTRACT)
   .filter(([kind]) => kind !== "fallback")
   .map(([kind, contract]) => [kind, contract.width, contract.height]);
 
-ensureCommand("sips", ["--version"]);
-ensureCommand("cwebp", ["-version"]);
-
-const data = loadDataSync();
-const dataErrors = validateData(data);
-if (dataErrors.length) fail(`Refusing to generate assets — invalid data:\n- ${dataErrors.join("\n- ")}`);
-
-const { games } = data;
-const workspace = mkdtempSync(join(tmpdir(), "first-eighth-assets-"));
-
 try {
-  for (const game of games) {
-    if (!game.screenshot) continue;
-    generateSet(game);
-  }
-} finally {
-  rmSync(workspace, { recursive: true, force: true });
+  main();
+  console.log("Screenshot WebP assets generated.");
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
 }
 
-console.log("Screenshot WebP assets generated.");
+function main() {
+  ensureCommand("sips", ["--version"]);
+  ensureCommand("cwebp", ["-version"]);
 
-function generateSet(game) {
+  const data = loadDataSync();
+  const dataErrors = validateData(data);
+  if (dataErrors.length) fail(`Refusing to generate assets — invalid data:\n- ${dataErrors.join("\n- ")}`);
+
+  const workspace = mkdtempSync(join(tmpdir(), "first-eighth-assets-"));
+  try {
+    for (const game of data.games) {
+      if (!game.screenshot) continue;
+      generateSet(game, workspace);
+    }
+  } finally {
+    // Always clean up the temp workspace, even when a step throws.
+    rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
+function generateSet(game, workspace) {
   const source = fromRoot(game.screenshot.fallback);
   if (!existsSync(source)) {
     fail(`Missing source capture for ${game.name}: ${game.screenshot.fallback} (add a 1440x900 PNG there)`);
@@ -64,6 +71,6 @@ function run(command, args, label) {
 }
 
 function fail(message) {
-  console.error(message);
-  process.exit(1);
+  // Throw rather than process.exit so the temp-workspace cleanup (finally) runs.
+  throw new Error(message);
 }

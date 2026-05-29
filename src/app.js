@@ -33,6 +33,10 @@ let detailReturn = "#/";
 // Pending "Copy link" label reset, so a rapid re-click owns the timer.
 let copyResetTimer = null;
 
+// Whether the open overlay was reached by an in-app push (vs a cold deep-link),
+// so closing can collapse that history entry instead of stacking another.
+let openedViaPush = false;
+
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
@@ -96,6 +100,7 @@ function onHashChange() {
 
   if (next.name === "game" && previous !== "game") {
     detailReturn = previous === "creators" ? "#/creators" : "#/";
+    openedViaPush = true; // an in-app anchor pushed this entry; close via history.back()
   }
 
   state.route = next;
@@ -159,16 +164,29 @@ function handleAction(actionEl, event) {
       if (input) input.value = "";
       syncGenreChips();
       renderResults();
+      input?.focus();
       return false;
     }
     case "copy-link":
       copyCurrentLink(actionEl);
       return false;
     case "close-detail":
-      location.hash = detailReturn || "#/";
+      closeDetail();
       return false;
     default:
       return false;
+  }
+}
+
+// Collapse the pushed game entry so the browser Back button does not re-open a
+// dismissed overlay; fall back to replacing the hash for a cold deep-link
+// (where there is no prior in-app entry to go back to).
+function closeDetail() {
+  if (openedViaPush) {
+    openedViaPush = false;
+    history.back();
+  } else {
+    location.replace(`${location.pathname}${location.search}${detailReturn || "#/"}`);
   }
 }
 
@@ -198,7 +216,7 @@ function onKeydown(event) {
       state.navOpen = false;
       render();
     } else {
-      location.hash = detailReturn || "#/";
+      closeDetail();
     }
   }
 }
@@ -604,7 +622,7 @@ function libraryPage() {
 
 function chipRow(genres) {
   return `
-    <section class="chip-row" role="toolbar" aria-label="Genre filters">
+    <section class="chip-row" role="group" aria-label="Genre filters">
       ${genres.map((genre) => `
         <button class="chip ${state.genre === genre ? "is-active" : ""}" aria-pressed="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
           ${escapeHtml(genre)}
@@ -679,7 +697,7 @@ function gameCard(game) {
         </div>
         <div class="card-actions">
           ${cardPlayLink(game)}
-          <a class="card-link" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener" aria-label="Open ${escapeAttr(game.name)} GitHub repository">GitHub</a>
+          ${externalLink("card-link", game.sourceUrl, "GitHub", game.name)}
         </div>
       </div>
     </article>
@@ -744,9 +762,9 @@ function detailOverlay(game) {
 
           <div class="detail-actions ${isWip ? "is-duo" : ""}">
             ${isWip
-              ? `<a class="button" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">Follow on GitHub</a>`
+              ? externalLink("button", game.sourceUrl, "Follow on GitHub", game.name)
               : `${playButton(game, "Play")}
-            <a class="button button-secondary" href="${escapeAttr(safeUrl(game.sourceUrl))}" target="_blank" rel="noreferrer noopener">GitHub</a>`}
+            ${externalLink("button button-secondary", game.sourceUrl, "GitHub", game.name)}`}
             <button class="button button-secondary" data-action="copy-link">Copy link</button>
             <span class="sr-only" data-detail-status aria-live="polite" aria-atomic="true"></span>
           </div>
@@ -800,7 +818,7 @@ function creatorCard(id, creator) {
         <span class="person-orb" style="--person:${escapeAttr(safeColor(creator.color))}" aria-hidden="true"></span>
         <div>
           <h2>${escapeHtml(creator.name)}</h2>
-          <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
+          <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${creator.name} on GitHub (${creator.handle}) — opens in a new tab`)}">${escapeHtml(creator.handle)}</a>
         </div>
       </div>
       <p>${escapeHtml(creator.bio)}</p>
@@ -849,12 +867,16 @@ function screenshotImage(game, image, big) {
 
 function playButton(game, label) {
   if (!game.url) return `<button class="button is-disabled" disabled>${escapeHtml(label)}</button>`;
-  return `<a class="button" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+  return `<a class="button" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`Play ${game.name} — opens in a new tab`)}">${escapeHtml(label)}</a>`;
 }
 
 function cardPlayLink(game) {
   if (!game.url) return `<button class="card-link is-disabled" disabled>Not live</button>`;
-  return `<a class="card-link is-primary" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
+  return `<a class="card-link is-primary" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`Play ${game.name} — opens in a new tab`)}">Play</a>`;
+}
+
+function externalLink(classes, url, label, name) {
+  return `<a class="${classes}" href="${escapeAttr(safeUrl(url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${label}${name ? ` ${name}` : ""} — opens in a new tab`)}">${escapeHtml(label)}</a>`;
 }
 
 function personPill(id, editorCount = 0) {
@@ -869,7 +891,7 @@ function personPill(id, editorCount = 0) {
 }
 
 function wipBadge() {
-  return `<span class="wip-badge"><span></span>WIP</span>`;
+  return `<span class="wip-badge" role="img" aria-label="Work in progress"><span></span>WIP</span>`;
 }
 
 async function copyCurrentLink(button) {

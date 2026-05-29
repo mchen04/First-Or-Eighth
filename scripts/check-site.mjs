@@ -162,6 +162,8 @@ function linkStylesheet(tag) {
   const href = attr(tag, "href");
   if (!rel || !href) return "";
   if (!rel.split(/\s+/).includes("stylesheet")) return "";
+  // Only count local stylesheets; a CDN/protocol-relative .css is not one of ours.
+  if (/^(?:[a-z]+:)?\/\//i.test(href)) return "";
   return href.endsWith(".css") ? href : "";
 }
 
