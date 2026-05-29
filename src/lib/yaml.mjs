@@ -42,6 +42,7 @@ function parseNode(ctx, indent) {
   if (ind < indent) return null;
 
   const content = line.slice(ind);
+  if (isDocumentMarker(content)) throwDocumentMarker(content, ctx.i);
   if (isSequenceMarker(content)) return parseSequence(ctx, ind);
   if (findKeyColon(content) !== -1) return parseMapping(ctx, ind);
 
@@ -71,6 +72,7 @@ function parseMapping(ctx, indent) {
     if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block (for a multi-line value, start it with "> " or "| " after the colon): ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
+    if (isDocumentMarker(content)) throwDocumentMarker(content, ctx.i);
     const colon = findKeyColon(content);
     if (colon === -1) {
       // A line at the mapping's own indent that is not a key is malformed —
@@ -112,6 +114,7 @@ function parseSequence(ctx, indent) {
     if (ind > indent) throw new YamlError(`Unexpected indentation — this line does not align with its block (for a multi-line value, start it with "> " or "| " after the colon): ${line.trim()}`, ctx.i);
 
     const content = line.slice(ind);
+    if (isDocumentMarker(content)) throwDocumentMarker(content, ctx.i);
     if (!isSequenceMarker(content)) break;
 
     const after = content.slice(1);
@@ -198,7 +201,7 @@ function parseBlockScalar(ctx, parentIndent, folded) {
   return out;
 }
 
-function parseScalar(value, lineNo) {
+function parseScalar(value, lineNo, inFlow = false) {
   if (value === "") return null;
 
   const first = value[0];
@@ -209,11 +212,14 @@ function parseScalar(value, lineNo) {
   // Plain scalar: a "#" that starts the value is a whole-line comment (null
   // value). A "#" after a space would start an inline comment and silently
   // truncate the value, so we reject it loudly — a literal "#" must be quoted
-  // (e.g. bio: "Autist #3."). Trailing comments are still allowed after quoted
-  // values, flow collections, and block-scalar headers.
-  if (first === "#") return null;
-  if (/\s#/.test(value)) {
-    throw new YamlError(`A "#" after a space starts a comment — wrap the value in double quotes to keep a literal "#": ${value}`, lineNo);
+  // (e.g. bio: "Autist #3."). Inside a flow collection there is no inline
+  // comment, so "#" is literal there. Trailing comments are still allowed after
+  // quoted values, flow collections, and block-scalar headers.
+  if (!inFlow) {
+    if (first === "#") return null;
+    if (/\s#/.test(value)) {
+      throw new YamlError(`A "#" after a space starts a comment — wrap the value in double quotes to keep a literal "#": ${value}`, lineNo);
+    }
   }
 
   if (value === "null" || value === "Null" || value === "NULL" || value === "~") return null;
@@ -271,7 +277,7 @@ function parseFlowSequence(value, lineNo) {
   if (close === -1) throw new YamlError(`Unterminated flow sequence (it must be on one line, e.g. [michael, justin]): ${value}`, lineNo);
   const after = value.slice(close + 1).trim();
   if (after !== "" && after[0] !== "#") throw new YamlError(`Unexpected text after "]": ${value}`, lineNo);
-  return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo));
+  return splitFlow(value.slice(1, close)).map((item) => parseScalar(item, lineNo, true));
 }
 
 function parseFlowMapping(value, lineNo) {
@@ -285,7 +291,7 @@ function parseFlowMapping(value, lineNo) {
     if (colon === -1) throw new YamlError(`Invalid flow mapping entry: ${pair}`, lineNo);
     const key = parseKey(pair.slice(0, colon), lineNo);
     if (Object.prototype.hasOwnProperty.call(map, key)) throw new YamlError(`Duplicate key "${key}" in flow mapping`, lineNo);
-    map[key] = parseScalar(pair.slice(colon + 1).trim(), lineNo);
+    map[key] = parseScalar(pair.slice(colon + 1).trim(), lineNo, true);
   }
   return map;
 }
@@ -350,10 +356,20 @@ function isSequenceMarker(content) {
   return content[0] === "-" && (content.length === 1 || content[1] === " ");
 }
 
+function isDocumentMarker(content) {
+  return content === "---" || content === "...";
+}
+
+function throwDocumentMarker(content, lineNo) {
+  throw new YamlError(`Document markers are not supported (only a single optional "---" on the first line): ${content}`, lineNo);
+}
+
 function isBlockScalarHeader(rest) {
-  // ">" or "|" with optional chomping/keep indicator and an optional trailing
-  // comment (e.g. "description: > # note").
-  return /^[>|][+-]?\d*(\s+#.*)?$/.test(rest);
+  // A bare ">" (folded) or "|" (literal) with an optional trailing comment.
+  // Chomping/indent indicators (>+, |-, >2) are intentionally NOT accepted —
+  // we don't honor their semantics, so they fall through to a clear error
+  // rather than being silently mis-parsed.
+  return /^[>|](\s+#.*)?$/.test(rest);
 }
 
 // Index of the colon that terminates a mapping key (a ":" followed by a space

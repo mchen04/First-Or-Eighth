@@ -166,7 +166,9 @@ function handleAction(actionEl, event) {
       if (input) input.value = "";
       syncGenreChips();
       renderResults();
-      input?.focus();
+      // Refocus search on pointer (desktop) devices only; on touch this would
+      // re-open the on-screen keyboard unprompted.
+      if (!window.matchMedia("(pointer: coarse)").matches) input?.focus();
       return false;
     }
     case "copy-link":
@@ -268,7 +270,11 @@ function renderResults() {
   const list = filteredGames();
   host.innerHTML = gridMarkup(list);
   const status = document.querySelector("[data-results-status]");
-  if (status) status.textContent = `${list.length} ${list.length === 1 ? "game" : "games"}`;
+  if (status) status.textContent = countLabel(list.length);
+}
+
+function countLabel(count) {
+  return `${count} ${count === 1 ? "game" : "games"}`;
 }
 
 function renderOverlay() {
@@ -587,6 +593,7 @@ function footer() {
 function libraryPage() {
   const genres = ["All", ...new Set(games.map((game) => game.genre))];
   const wipCount = games.filter((game) => game.status === "WIP").length;
+  const filtered = filteredGames();
 
   return `
     <main class="page" data-page="library">
@@ -616,8 +623,8 @@ function libraryPage() {
 
       ${genres.length > 2 ? chipRow(genres) : ""}
 
-      <span class="sr-only" data-results-status role="status" aria-live="polite" aria-atomic="true"></span>
-      <div class="game-results" id="game-results">${resultsMarkup()}</div>
+      <span class="sr-only" data-results-status role="status" aria-live="polite" aria-atomic="true">${countLabel(filtered.length)}</span>
+      <div class="game-results" id="game-results">${gridMarkup(filtered)}</div>
     </main>
   `;
 }
@@ -640,10 +647,6 @@ function syncGenreChips() {
     chip.classList.toggle("is-active", on);
     chip.setAttribute("aria-pressed", String(on));
   }
-}
-
-function resultsMarkup() {
-  return gridMarkup(filteredGames());
 }
 
 function gridMarkup(list) {
@@ -707,11 +710,14 @@ function gameCard(game) {
 }
 
 function emptyState() {
+  const onlySearch = state.genre === "All" && state.query.trim() !== "";
+  const helper = onlySearch ? "Try a different search." : "Try a different search or clear the genre filter.";
+  const action = onlySearch ? "Clear search" : "Clear filters";
   return `
     <section class="empty-state surface">
       <h2>Nothing here.</h2>
-      <p>Try a different search or clear the filters.</p>
-      <button class="button button-secondary" data-action="clear-filters">Clear filters</button>
+      <p>${helper}</p>
+      <button class="button button-secondary" data-action="clear-filters">${action}</button>
     </section>
   `;
 }
@@ -746,7 +752,7 @@ function detailOverlay(game) {
         <div class="detail-body">
           <div class="detail-header">
             <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
-            <h2 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h2>
+            <h1 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h1>
             <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
             <div class="detail-tags">
               <span class="tag">${escapeHtml(game.genre)}</span>

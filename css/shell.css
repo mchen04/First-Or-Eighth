@@ -163,6 +163,11 @@
   transition: transform 180ms ease;
 }
 
+.mobile-drawer:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .mobile-drawer a {
   padding: 15px 0;
   border-bottom: 1px solid var(--border);

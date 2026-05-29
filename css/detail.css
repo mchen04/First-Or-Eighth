@@ -208,8 +208,10 @@
   background: var(--bg-elev);
 }
 
-.credit-pill:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .credit-pill:hover {
+    border-color: var(--accent);
+  }
 }
 
 .credit-name {
@@ -259,7 +261,8 @@
   border: 1px solid var(--accent);
   border-radius: 6px;
   background: var(--accent);
-  box-shadow: 0 12px 28px rgba(255, 61, 127, 0.22);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 28%, transparent);
   color: #0a0b14;
   cursor: pointer;
   font-family: var(--mono);
@@ -275,8 +278,17 @@
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
 }
 
-.button:hover:not(:disabled) {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+/* The dialogs receive focus on open; give them a visible ring like other
+   focusable targets (the global focus-visible only covers form controls). */
+.detail-panel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .button-secondary,
@@ -398,9 +410,10 @@
     min-height: 160px;
   }
 
-  /* Last-resort scroll so the action bar stays reachable if a game ever has so
-     many builders that the fixed header + actions exceed this short panel
-     (real data fits, so the body never actually scrolls here). */
+  /* The action bar lives at the bottom of the body; on the very shortest
+     landscape heights (or a many-builder game) the body scrolls so Play stays
+     reachable. On the required landscape sizes (844x390, 932x430) everything
+     fits without scrolling. */
   .detail-body {
     flex: 1 1 auto;
     min-width: 0;
