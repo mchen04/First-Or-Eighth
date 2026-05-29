@@ -52,11 +52,11 @@ for (const file of cssFiles) {
 
 const css = cssFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 
-for (const name of ["Jeremy", "Matthew", "Michael", "Ding", "LoLdle", "Valence", "25 Words or Less", "Pancake", "WIP"]) {
+for (const name of ["Jeremy", "Matthew", "Michael", "Justin", "Ding", "LoLdle", "Valence", "25 Words or Less", "King's Cup", "Pour Decisions", "Neon Royale", "Pancake", "WIP"]) {
   if (!data.includes(name)) fail(`src/data.mjs missing expected game/creator copy: ${name}`);
 }
 
-for (const copy of ["collaborative poker-ranking", "League of Legends champion guessing", "live sports dashboard", "local same-screen party game"]) {
+for (const copy of ["collaborative poker-ranking", "League of Legends champion guessing", "live sports dashboard", "local same-screen party game", "pass-the-phone party card game", "neon-noir drinking games arcade", "neon art-deco casino"]) {
   if (!data.includes(copy)) fail(`src/data.mjs missing GitHub-informed description copy: ${copy}`);
 }
 
@@ -78,7 +78,7 @@ for (const forbidden of ["statsPage", "#/stats", "hero(", "#/about", "aboutPage"
 
 if (!js.includes('sort: "az"')) fail("src/app.js should default to alphabetical sorting");
 
-for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "onlineCount()"]) {
+for (const snippet of ["Autist #1", "Autist #2", "Autist #3", "Autist #4", "onlineCount()"]) {
   if (!(js + data).includes(snippet)) fail(`Source missing requested builder copy: ${snippet}`);
 }
 

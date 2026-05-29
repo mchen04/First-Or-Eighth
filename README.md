@@ -6,15 +6,20 @@ First or Eighth is a responsive game hub for the current friend-group games:
 - LoLdle: live at <https://loldle-app.vercel.app/> / source at <https://github.com/mchen04/LoLdle>
 - Valence: live at <https://valence1.vercel.app/> / source at <https://github.com/jormyy/valence>
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/> / source at <https://github.com/matthewh8/25-words-or-less>
+- Heardle: live at <https://heardle67.vercel.app> / source at <https://github.com/jormyy/heardle>
+- King's Cup: live at <https://kings-cup-liard.vercel.app/> / source at <https://github.com/mchen04/Kings_Cup>
+- Pour Decisions: live at <https://drinking-games-eosin.vercel.app/> / source at <https://github.com/mchen04/Drinking_Games>
+- Neon Royale: live at <https://casino-topaz-gamma.vercel.app/> / source at <https://github.com/mchen04/Casino>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
 
 The visual direction is a neon dark game shelf with equal-weight cards, a mobile drawer, searchable/filterable listings, game detail views, and creator credits.
 
 ## Credits
 
-- Jeremy created Ding, Valence, and Pancake.
+- Jeremy created Ding, Valence, Heardle, and Pancake.
 - Matthew created 25 Words or Less.
-- Michael created LoLdle and edited the other current games and the hub presentation.
+- Michael created LoLdle, King's Cup, Pour Decisions, and Neon Royale, and edited the other current games and the hub presentation.
+- Justin edited King's Cup.
 
 ## Development
 

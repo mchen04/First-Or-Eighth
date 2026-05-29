@@ -437,7 +437,7 @@ function creatorsPage() {
       <section class="library-head">
         <div>
           <h1>Builders.</h1>
-          <p>The three of us, and what we've shipped.</p>
+          <p>The four of us, and what we've shipped.</p>
         </div>
       </section>
       <section class="creator-grid">

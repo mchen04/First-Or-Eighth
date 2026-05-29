@@ -36,6 +36,10 @@ Only the user's current games are included. Add more games by appending to the `
 - Ding: poker-ranking game with live link, GitHub source, and `assets/shot-ding*`, creator Jeremy, editor Michael.
 - LoLdle: League champion guessing game with live link, GitHub source, and `assets/shot-loldle*`, creator Michael.
 - Valence: sports dashboard with live link, GitHub source, and `assets/shot-valence*`, creator Jeremy, editor Michael.
+- Heardle: music guessing game with live link, GitHub source, and `assets/shot-heardle*`, creator Jeremy.
+- King's Cup: pass-the-phone card game with live link, GitHub source, and `assets/shot-kings-cup*`, creator Michael, editor Justin.
+- Pour Decisions: neon drinking-games arcade with live link, GitHub source, and `assets/shot-pour-decisions*`, creator Michael.
+- Neon Royale: play-money casino with live link, GitHub source, and `assets/shot-casino*`, creator Michael.
 - Pancake: WIP with GitHub source, creator Jeremy, editor Michael.
 
 ## Verification Targets
