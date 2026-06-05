@@ -37,6 +37,7 @@ if (data && !games.length) fail("No games defined in data/games.yaml");
 const screenshotFiles = games.flatMap((game) => (game.screenshot ? Object.values(game.screenshot) : []));
 const requiredFiles = [
   "index.html",
+  "favicon.svg",
   "src/app.js",
   "src/data.mjs",
   "src/lib/yaml.mjs",
@@ -66,9 +67,11 @@ if (linkedCss.join("\n") !== expectedCssFiles.join("\n")) {
   fail(`index.html stylesheet order mismatch. Expected: ${expectedCssFiles.join(", ")}; found: ${linkedCss.join(", ")}`);
 }
 
-for (const snippet of ["First or Eighth", "src/app.js", ...linkedCss]) {
+for (const snippet of ["First or Eighth", "favicon.svg", "src/app.js", ...linkedCss]) {
   if (!html.includes(snippet)) fail(`index.html does not include ${snippet}`);
 }
+
+if (html.includes('href="data:,"')) fail("index.html still suppresses the favicon with href=\"data:,\"");
 
 // --- CSS contracts ------------------------------------------------------------
 
