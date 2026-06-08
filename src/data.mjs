@@ -169,6 +169,7 @@ export const games = [
     genre: "Arcade",
     year: "2026",
     accent: "#ffb627",
+    screenshot: screenshotSet("assets/shot-pancake"),
     tagline: "Stack 'em while they're hot.",
     description:
       "Pancake is still being built. It gets a visible slot now so the hub already works when the game is ready to join the rotation."
