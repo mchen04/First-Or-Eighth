@@ -182,7 +182,7 @@
   genre: Arcade
   year: 2026
   accent: "#ffb627"
-  screenshot: false
+  screenshot: true
   tagline: Stack 'em while they're hot.
   description: >
     Pancake is still being built. It gets a visible slot now so the hub
