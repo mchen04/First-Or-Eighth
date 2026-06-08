@@ -1,213 +1,500 @@
-import { creators, games } from "./data.mjs";
+import { loadData } from "./data.mjs";
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
 
 const state = {
-  route: readRoute(),
+  route: { name: "home" },
   query: "",
   genre: "All",
   sort: "az",
   navOpen: false,
-  navScrollY: 0
+  ready: false
 };
 
 const app = document.querySelector("#app");
-const desktopNav = window.matchMedia("(min-width: 961px)");
+const desktopQuery = window.matchMedia("(min-width: 961px)");
+
+let creators = {};
+let games = [];
+
 let shellRendered = false;
-let navReturnFocus = null;
-let shouldFocusDrawer = false;
-let shouldRestoreNavFocus = false;
+let mountedPage = null; // "library" | "creators" — the background page in #view-root
 
-desktopNav.addEventListener("change", () => {
-  if (!desktopNav.matches || !state.navOpen) return;
-  setNavOpen(false);
-  render();
-});
+// Modal layer bookkeeping (shared by the nav drawer and the detail overlay).
+let activeLayer = null; // "nav" | "detail" | null
+let layerReturnFocus = null;
+const scrollLock = { active: false, y: 0 };
 
-window.addEventListener("hashchange", () => {
+// Where to send the user when the detail overlay closes.
+let detailReturn = "#/";
+
+// Pending "Copy link" label reset, so a rapid re-click owns the timer.
+let copyResetTimer = null;
+
+// Whether the open overlay was reached by an in-app push (vs a cold deep-link),
+// so closing can collapse that history entry instead of stacking another.
+let openedViaPush = false;
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
+window.addEventListener("hashchange", onHashChange);
+document.addEventListener("click", onClick);
+document.addEventListener("input", onInput);
+document.addEventListener("keydown", onKeydown);
+desktopQuery.addEventListener("change", onDesktopChange);
+
+boot();
+
+async function boot() {
+  try {
+    const data = await loadData();
+    creators = data.creators;
+    games = data.games;
+  } catch (error) {
+    renderFatal(error);
+    return;
+  }
+  state.ready = true;
   state.route = readRoute();
-  setNavOpen(false, { restoreScroll: false });
+  normalizeUnresolvedHash();
   render();
-  window.scrollTo({ top: 0, behavior: "auto" });
-});
+}
 
-document.addEventListener("click", (event) => {
-  const action = event.target.closest("[data-action]");
-  if (!action) return;
-
-  if (handleAction(action)) render();
-});
-
-document.addEventListener("input", (event) => {
-  if (event.target.matches("[data-search]")) {
-    state.query = event.target.value;
-    renderMain();
-    restoreSearchFocus();
-    return;
-  }
-
-  if (event.target.matches("[data-sort]")) {
-    state.sort = event.target.value;
-    renderMain();
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (state.navOpen && event.key === "Tab") {
-    trapNavFocus(event);
-    return;
-  }
-
-  if (event.key !== "Escape" || !state.navOpen) return;
-  setNavOpen(false);
-  render();
-});
-
-render();
+// ---------------------------------------------------------------------------
+// Routing
+// ---------------------------------------------------------------------------
 
 function readRoute() {
   const hash = location.hash.replace(/^#\/?/, "");
   if (!hash) return { name: "home" };
   const [name, id] = hash.split("/");
   if (name === "game" && games.some((game) => game.id === id)) return { name: "game", id };
-  if (name === "creators") return { name };
+  if (name === "creators") return { name: "creators" };
   return { name: "home" };
 }
 
-function render() {
-  if (!shellRendered) renderShell();
-  renderShellState();
-  renderMain();
+function currentHash() {
+  return location.hash || "#/";
 }
 
-function renderShell() {
-  app.innerHTML = `
-    ${topbar()}
-    <div id="view-root"></div>
-    ${footer()}
-  `;
-  shellRendered = true;
+// Repair the address bar so it always reflects the resolved view: an
+// unresolvable game, an unknown route, or trailing junk segments
+// (#/game/x/extra) are rewritten to the canonical hash. replaceState avoids a
+// spurious history entry and does not re-trigger hashchange. A bare/empty home
+// hash is left alone so a clean URL stays clean.
+function normalizeUnresolvedHash() {
+  const route = state.route;
+  const canonical = route.name === "game" ? `#/game/${route.id}` : route.name === "creators" ? "#/creators" : "#/";
+  if (canonical === "#/" && (location.hash === "" || location.hash === "#" || location.hash === "#/")) return;
+  if (location.hash !== canonical) history.replaceState(null, "", canonical);
 }
 
-function renderMain() {
-  document.querySelector("#view-root").innerHTML = mainView();
-}
+function onHashChange() {
+  if (!state.ready) return;
+  const previous = state.route.name;
+  const next = readRoute();
 
-function renderShellState() {
-  document.querySelector("[data-action='toggle-nav']")?.setAttribute("aria-expanded", String(state.navOpen));
-  document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
-  setInert(".topbar", state.navOpen);
-  setInert("#view-root", state.navOpen);
-  setInert(".footer", state.navOpen);
-
-  const drawer = document.querySelector(".mobile-drawer");
-  if (drawer) {
-    drawer.classList.toggle("is-open", state.navOpen);
-    drawer.setAttribute("aria-hidden", String(!state.navOpen));
-    drawer.setAttribute("aria-modal", String(state.navOpen));
-    if (state.navOpen) drawer.removeAttribute("inert");
-    else drawer.setAttribute("inert", "");
+  if (next.name === "game" && previous !== "game") {
+    detailReturn = previous === "creators" ? "#/creators" : "#/";
+    openedViaPush = true; // an in-app anchor pushed this entry; close via history.back()
+  } else if (next.name !== "game") {
+    openedViaPush = false; // left the overlay by any route; don't keep a stale flag
   }
 
-  for (const link of document.querySelectorAll("[data-route]")) {
-    link.classList.toggle("is-active", link.dataset.route === routeId());
-  }
-
-  syncNavFocus(drawer);
-}
-
-function setNavOpen(open, { restoreScroll = true, restoreFocus = true } = {}) {
-  if (state.navOpen === open) return;
-
-  if (open) {
-    navReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    shouldFocusDrawer = true;
-    shouldRestoreNavFocus = false;
-    state.navScrollY = window.scrollY;
-    document.body.style.top = `-${state.navScrollY}px`;
-    document.body.classList.add("nav-open");
-    state.navOpen = true;
-    return;
-  }
-
+  state.route = next;
   state.navOpen = false;
-  shouldFocusDrawer = false;
-  shouldRestoreNavFocus = restoreFocus;
-  if (!restoreFocus) navReturnFocus = null;
-  document.body.classList.remove("nav-open");
-  document.body.style.top = "";
+  normalizeUnresolvedHash();
 
-  if (restoreScroll) {
-    window.scrollTo({ top: state.navScrollY, behavior: "auto" });
+  // Closing the overlay back to the page it was opened from preserves that
+  // page's scroll position (via the scroll lock). Any other top-level
+  // navigation — including opening a game elsewhere then leaving — starts at
+  // the top, overriding the lock's restore.
+  const returningToOrigin = previous === "game" && next.name !== "game" && currentHash() === detailReturn;
+
+  render();
+
+  if (next.name !== "game" && !returningToOrigin) {
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 }
 
-function handleAction(action) {
-  switch (action.dataset.action) {
+function onDesktopChange() {
+  if (desktopQuery.matches && state.navOpen) {
+    state.navOpen = false;
+    render();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+function onClick(event) {
+  const actionEl = event.target.closest("[data-action]");
+  if (!actionEl) return;
+  if (handleAction(actionEl, event)) render();
+}
+
+function handleAction(actionEl, event) {
+  switch (actionEl.dataset.action) {
+    case "skip-content":
+      event.preventDefault();
+      document.querySelector("#view-root")?.focus({ preventScroll: false });
+      return false;
     case "toggle-nav":
-      setNavOpen(!state.navOpen);
+      state.navOpen = !state.navOpen;
       return true;
     case "close-nav":
-      setNavOpen(false);
+      state.navOpen = false;
       return true;
     case "nav-link":
-      setNavOpen(false, { restoreFocus: false });
-      return action.getAttribute("href") === routeHref();
+      state.navOpen = false;
+      return actionEl.getAttribute("href") === currentHash();
     case "set-genre":
-      state.genre = action.dataset.genre;
-      return true;
+      state.genre = actionEl.dataset.genre;
+      syncGenreChips();
+      renderResults();
+      return false;
+    case "clear-filters": {
+      state.query = "";
+      state.genre = "All";
+      const input = document.querySelector("[data-search]");
+      if (input) input.value = "";
+      syncGenreChips();
+      renderResults();
+      // Refocus search on pointer (desktop) devices only; on touch this would
+      // re-open the on-screen keyboard unprompted.
+      if (!window.matchMedia("(pointer: coarse)").matches) input?.focus();
+      return false;
+    }
     case "copy-link":
-      copyCurrentLink(action);
+      copyCurrentLink(actionEl);
+      return false;
+    case "close-detail":
+      closeDetail();
       return false;
     default:
       return false;
   }
 }
 
-function routeHref() {
-  if (state.route.name === "home") return "#/";
-  return `#/${state.route.name}`;
+// Collapse the pushed game entry so the browser Back button does not re-open a
+// dismissed overlay; fall back to replacing the hash for a cold deep-link
+// (where there is no prior in-app entry to go back to).
+function closeDetail() {
+  if (openedViaPush) {
+    openedViaPush = false;
+    history.back();
+  } else {
+    location.replace(`${location.pathname}${location.search}${detailReturn || "#/"}`);
+  }
 }
 
-function routeId() {
-  return state.route.name === "home" ? "home" : state.route.name;
+function onInput(event) {
+  if (event.target.matches("[data-search]")) {
+    state.query = event.target.value;
+    renderResults();
+    return;
+  }
+  if (event.target.matches("[data-sort]")) {
+    state.sort = event.target.value;
+    renderResults();
+  }
 }
 
-function setInert(selector, inert) {
-  const element = document.querySelector(selector);
-  if (!element) return;
-  if (inert) element.setAttribute("inert", "");
-  else element.removeAttribute("inert");
-}
+function onKeydown(event) {
+  const layer = currentLayer();
+  if (!layer) return;
 
-function syncNavFocus(drawer) {
-  if (state.navOpen && shouldFocusDrawer && drawer) {
-    shouldFocusDrawer = false;
-    if (!drawer.contains(document.activeElement)) {
-      (drawer.querySelector("a[href]") || drawer).focus({ preventScroll: true });
-    }
+  if (event.key === "Tab") {
+    trapFocus(event, layerElement(layer));
     return;
   }
 
-  if (!state.navOpen && shouldRestoreNavFocus) {
-    shouldRestoreNavFocus = false;
-    if (navReturnFocus?.isConnected) navReturnFocus.focus({ preventScroll: true });
-    navReturnFocus = null;
+  if (event.key === "Escape") {
+    if (layer === "nav") {
+      state.navOpen = false;
+      render();
+    } else {
+      closeDetail();
+    }
   }
 }
 
-function trapNavFocus(event) {
+// ---------------------------------------------------------------------------
+// Render orchestration
+// ---------------------------------------------------------------------------
+
+function render() {
+  if (!shellRendered) renderShell();
+  renderBackground();
+  renderOverlay();
+  syncShellState();
+}
+
+function renderShell() {
+  app.innerHTML = `
+    <a class="skip-link" href="#view-root" data-action="skip-content">Skip to content</a>
+    ${topbar()}
+    <div id="view-root" tabindex="-1"></div>
+    <div id="overlay-root"></div>
+    ${footer()}
+  `;
+  shellRendered = true;
+}
+
+function renderBackground() {
+  const viewRoot = document.querySelector("#view-root");
+  // A game route keeps whatever page is already mounted behind the overlay
+  // (defaulting to the library on a cold deep-link). Keeping that DOM intact
+  // preserves the library's scroll/search state and lets focus return to the
+  // exact card the overlay was opened from when it closes.
+  const wanted =
+    state.route.name === "creators" ? "creators" :
+    state.route.name === "game" ? (mountedPage ?? "library") :
+    "library";
+
+  if (mountedPage === wanted) return;
+
+  viewRoot.innerHTML = wanted === "creators" ? creatorsPage() : libraryPage();
+  mountedPage = wanted;
+}
+
+function renderResults() {
+  const host = document.querySelector("#game-results");
+  if (!host) return;
+  const list = filteredGames();
+  host.innerHTML = gridMarkup(list);
+  const status = document.querySelector("[data-results-status]");
+  if (status) status.textContent = countLabel(list.length);
+}
+
+function countLabel(count) {
+  return `${count} ${count === 1 ? "game" : "games"}`;
+}
+
+function renderOverlay() {
+  const host = document.querySelector("#overlay-root");
+
+  if (state.route.name !== "game") {
+    document.title = BASE_TITLE;
+    dismissOverlay(host);
+    return;
+  }
+
+  const game = games.find((candidate) => candidate.id === state.route.id);
+  if (!game) {
+    document.title = BASE_TITLE;
+    dismissOverlay(host);
+    return;
+  }
+  document.title = `${game.name} — ${BASE_TITLE}`;
+  if (host.dataset.gameId === game.id) return;
+
+  // Already-open overlay swapping to a different game (e.g. a manual hash
+  // change): move focus into the rebuilt panel. On a fresh open this stays
+  // false so syncLayerFocus can record the trigger element for focus return.
+  const wasOpen = activeLayer === "detail";
+
+  host.innerHTML = detailOverlay(game);
+  host.dataset.gameId = game.id;
+
+  // Commit the closed state with a forced reflow, then flip to open so the
+  // enter transition runs. This is deterministic (unlike rAF, which can be
+  // throttled) and guarantees the panel ends in its visible position.
+  const overlay = host.querySelector(".detail-overlay");
+  if (overlay) {
+    void overlay.offsetWidth;
+    overlay.classList.add("is-open");
+  }
+  syncScrollAffordance(host);
+
+  if (wasOpen) host.querySelector(".detail-panel")?.focus({ preventScroll: true });
+}
+
+// Show a bottom fade on the description region only while it actually overflows
+// and is not scrolled to the end, so clipped text reads as scrollable. Also
+// make it a tab stop only when it can scroll.
+function syncScrollAffordance(host) {
+  const scroll = host.querySelector(".detail-scroll");
+  if (!scroll) return;
+  const update = () => {
+    const overflowing = scroll.scrollHeight - scroll.clientHeight > 1;
+    const atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+    scroll.classList.toggle("show-fade", overflowing && !atBottom);
+    scroll.tabIndex = overflowing ? 0 : -1;
+  };
+  update();
+  scroll.addEventListener("scroll", update, { passive: true });
+  // Recompute after font-swap reflow and on rotation/resize. The observer is
+  // GC'd with the node when the overlay's innerHTML is replaced/cleared.
+  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(scroll);
+}
+
+// Play the close transition, then tear down the DOM — unless a new overlay
+// opened in the meantime (dataset.gameId set again).
+function dismissOverlay(host) {
+  if (!host.dataset.gameId) return;
+  delete host.dataset.gameId;
+
+  const overlay = host.querySelector(".detail-overlay");
+  if (!overlay) {
+    host.innerHTML = "";
+    return;
+  }
+
+  const clear = () => {
+    if (!host.dataset.gameId) host.innerHTML = "";
+  };
+
+  if (prefersReducedMotion()) {
+    clear();
+    return;
+  }
+
+  overlay.classList.remove("is-open");
+  overlay.style.pointerEvents = "none";
+  // Take the fading overlay out of the tab order and hit-testing immediately,
+  // while the background is being un-inerted in the same render pass.
+  overlay.toggleAttribute("inert", true);
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    overlay.removeEventListener("transitionend", onEnd);
+    clear();
+  };
+  // Wait for the panel's own transition, ignoring the scrim/buttons bubbling up.
+  const onEnd = (event) => {
+    if (event.target === overlay || event.target === overlay.querySelector(".detail-panel")) finish();
+  };
+  overlay.addEventListener("transitionend", onEnd);
+  window.setTimeout(finish, 280);
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function syncShellState() {
+  const layer = currentLayer();
+  const overlayActive = layer !== null;
+
+  // Capture the trigger to return focus to BEFORE inert blurs it. Applying
+  // inert to an ancestor of the focused element (the card or hamburger) blurs
+  // it synchronously, so this must happen before the setInert calls below.
+  if (layer && !activeLayer) {
+    const active = document.activeElement;
+    layerReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
+  }
+
+  const navToggle = document.querySelector("[data-action='toggle-nav']");
+  navToggle?.setAttribute("aria-expanded", String(state.navOpen));
+  navToggle?.setAttribute("aria-label", state.navOpen ? "Close menu" : "Open menu");
+  document.querySelector(".mobile-scrim")?.classList.toggle("is-open", state.navOpen);
+
+  setInert(".topbar", overlayActive);
+  setInert("#view-root", overlayActive);
+  setInert(".footer", overlayActive);
+
   const drawer = document.querySelector(".mobile-drawer");
-  if (!drawer) return;
-  const focusable = [...drawer.querySelectorAll("a[href], button:not([disabled])")];
+  if (drawer) {
+    drawer.classList.toggle("is-open", state.navOpen);
+    drawer.setAttribute("aria-hidden", String(!state.navOpen));
+    drawer.setAttribute("aria-modal", String(state.navOpen));
+    drawer.toggleAttribute("inert", !state.navOpen);
+  }
+
+  for (const link of document.querySelectorAll("[data-route]")) {
+    const active = link.dataset.route === routeId();
+    link.classList.toggle("is-active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+
+  syncScrollLock(overlayActive);
+  syncLayerFocus(layer);
+}
+
+// ---------------------------------------------------------------------------
+// Modal layer helpers (drawer + detail overlay)
+// ---------------------------------------------------------------------------
+
+function currentLayer() {
+  if (state.navOpen) return "nav";
+  if (state.route.name === "game") return "detail";
+  return null;
+}
+
+function layerElement(layer) {
+  if (layer === "nav") return document.querySelector(".mobile-drawer");
+  if (layer === "detail") return document.querySelector(".detail-panel");
+  return null;
+}
+
+function syncScrollLock(shouldLock) {
+  if (shouldLock && !scrollLock.active) {
+    scrollLock.y = window.scrollY;
+    document.body.style.top = `-${scrollLock.y}px`;
+    document.body.classList.add("scroll-lock");
+    scrollLock.active = true;
+  } else if (!shouldLock && scrollLock.active) {
+    scrollLock.active = false;
+    document.body.classList.remove("scroll-lock");
+    document.body.style.top = "";
+    window.scrollTo({ top: scrollLock.y, behavior: "auto" });
+  }
+}
+
+function syncLayerFocus(layer) {
+  // The return target was captured in syncShellState() before inert ran (see
+  // there). A drawer -> detail hand-off keeps the original trigger because
+  // layerReturnFocus is only (re)captured on the no-layer -> layer transition.
+  if (layer && layer !== activeLayer) {
+    // The detail panel is a labelled dialog (role + aria-labelledby), so focus
+    // the container itself to announce the game title; the drawer focuses its
+    // first link.
+    if (layer === "detail") layerElement(layer)?.focus({ preventScroll: true });
+    else focusInto(layerElement(layer));
+  } else if (!layer && activeLayer) {
+    // Restore focus to the trigger, falling back to the main content so focus
+    // never lands on <body> if the trigger was removed or inert-ed.
+    const target = layerReturnFocus?.isConnected && !layerReturnFocus.closest("[inert]")
+      ? layerReturnFocus
+      : document.querySelector("#view-root");
+    target?.focus({ preventScroll: true });
+    layerReturnFocus = null;
+  }
+
+  activeLayer = layer;
+}
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function focusInto(element) {
+  if (!element || element.contains(document.activeElement)) return;
+  const focusable = element.querySelector(FOCUSABLE);
+  (focusable || element).focus({ preventScroll: true });
+}
+
+function trapFocus(event, container) {
+  if (!container) return;
+  const focusable = [...container.querySelectorAll(FOCUSABLE)];
   if (!focusable.length) {
     event.preventDefault();
-    drawer.focus({ preventScroll: true });
+    container.focus({ preventScroll: true });
     return;
   }
 
   const first = focusable[0];
   const last = focusable.at(-1);
 
-  if (!drawer.contains(document.activeElement)) {
+  if (!container.contains(document.activeElement)) {
     event.preventDefault();
     (event.shiftKey ? last : first).focus({ preventScroll: true });
   } else if (event.shiftKey && document.activeElement === first) {
@@ -219,12 +506,28 @@ function trapNavFocus(event) {
   }
 }
 
-function topbar() {
-  const links = [
-    ["home", "Games", "#/"],
-    ["creators", "Builders", "#/creators"]
-  ];
+const INERT_SUPPORTED = typeof HTMLElement !== "undefined" && "inert" in HTMLElement.prototype;
 
+function setInert(selector, inert) {
+  const element = document.querySelector(selector);
+  if (!element) return;
+  element.toggleAttribute("inert", inert);
+  // Fallback for engines without inert (older Safari): hide from AT too.
+  if (!INERT_SUPPORTED) element.toggleAttribute("aria-hidden", inert);
+}
+
+// ---------------------------------------------------------------------------
+// Shell
+// ---------------------------------------------------------------------------
+
+const BASE_TITLE = "First or Eighth";
+
+const NAV_LINKS = [
+  ["home", "Games", "#/"],
+  ["creators", "Builders", "#/creators"]
+];
+
+function topbar() {
   return `
     <header class="topbar">
       <a class="brand" href="#/" aria-label="First or Eighth home">
@@ -232,17 +535,18 @@ function topbar() {
         <span>FIRST_OR_EIGHTH</span>
       </a>
       <nav class="desktop-nav" aria-label="Primary">
-        ${links.map(([id, label, href]) => navLink(id, label, href)).join("")}
+        ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href)).join("")}
       </nav>
       <div class="topbar-right">
-        <span class="online-pill" title="${onlineCount()} live playable games"><span class="status-dot"></span>${onlineCount()} online</span>
-        <button class="icon-button" data-action="toggle-nav" aria-label="Open menu" aria-expanded="${state.navOpen}">
+        <span class="online-pill"><span class="status-dot" aria-hidden="true"></span>${onlineCount()} online<span class="sr-only"> live playable games</span></span>
+        <button class="icon-button" data-action="toggle-nav" aria-controls="mobile-drawer" aria-label="${state.navOpen ? "Close menu" : "Open menu"}" aria-expanded="${state.navOpen}">
           <span></span><span></span><span></span>
         </button>
       </div>
     </header>
     <div class="mobile-scrim ${state.navOpen ? "is-open" : ""}" data-action="close-nav"></div>
     <aside
+      id="mobile-drawer"
       class="mobile-drawer ${state.navOpen ? "is-open" : ""}"
       aria-label="Mobile navigation"
       aria-hidden="${state.navOpen ? "false" : "true"}"
@@ -254,9 +558,9 @@ function topbar() {
       <button class="drawer-close" data-action="close-nav" aria-label="Close menu">
         <span></span><span></span>
       </button>
-      ${links.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
+      ${NAV_LINKS.map(([id, label, href]) => navLink(id, label, href, "nav-link")).join("")}
       <div class="drawer-foot">
-        <span class="status-dot"></span>
+        <span class="status-dot" aria-hidden="true"></span>
         ${games.length} ${games.length === 1 ? "game" : "games"} in rotation
       </div>
     </aside>
@@ -264,23 +568,35 @@ function topbar() {
 }
 
 function navLink(id, label, href, action = "") {
-  const active = (id === "home" && state.route.name === "home") || id === state.route.name;
-  return `<a class="${active ? "is-active" : ""}" href="${href}" data-route="${id}" ${action ? `data-action="${action}"` : ""}>${label}</a>`;
+  const active = id === routeId();
+  return `<a class="${active ? "is-active" : ""}"${active ? ` aria-current="page"` : ""} href="${escapeAttr(href)}" data-route="${escapeAttr(id)}" ${action ? `data-action="${escapeAttr(action)}"` : ""}>${escapeHtml(label)}</a>`;
 }
 
-function mainView() {
-  if (state.route.name === "game") return gameDetail(games.find((game) => game.id === state.route.id));
-  if (state.route.name === "creators") return creatorsPage();
-  return libraryPage();
+function footer() {
+  return `
+    <footer class="footer">
+      <span>FIRST_OR_EIGHTH</span>
+      <span class="footer-creators">
+        ${sortedCreators().map(([, creator]) => `
+          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(safeColor(creator.color))}"></span>${escapeHtml(creator.name)}</span>
+        `).join("")}
+      </span>
+      <span>No ads / no tracking / no coins</span>
+    </footer>
+  `;
 }
+
+// ---------------------------------------------------------------------------
+// Library page
+// ---------------------------------------------------------------------------
 
 function libraryPage() {
-  const filtered = filteredGames();
   const genres = ["All", ...new Set(games.map((game) => game.genre))];
   const wipCount = games.filter((game) => game.status === "WIP").length;
+  const filtered = filteredGames();
 
   return `
-    <main class="page">
+    <main class="page" data-page="library">
       <section class="library-head">
         <div>
           <h1>Games.</h1>
@@ -305,48 +621,71 @@ function libraryPage() {
         </label>
       </section>
 
-      ${genres.length > 2 ? `
-        <section class="chip-row" aria-label="Genre filters">
-          ${genres.map((genre) => `
-            <button class="chip ${state.genre === genre ? "is-active" : ""}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
-              ${escapeHtml(genre)}
-            </button>
-          `).join("")}
-        </section>
-      ` : ""}
+      ${genres.length > 2 ? chipRow(genres) : ""}
 
-      ${filtered.length ? `<section class="game-grid">${filtered.map(gameCard).join("")}</section>` : emptyState()}
+      <span class="sr-only" data-results-status role="status" aria-live="polite" aria-atomic="true">${countLabel(filtered.length)}</span>
+      <div class="game-results" id="game-results">${gridMarkup(filtered)}</div>
     </main>
   `;
 }
 
+function chipRow(genres) {
+  return `
+    <section class="chip-row" role="group" aria-label="Genre filters">
+      ${genres.map((genre) => `
+        <button class="chip ${state.genre === genre ? "is-active" : ""}" aria-pressed="${state.genre === genre}" data-action="set-genre" data-genre="${escapeAttr(genre)}">
+          ${escapeHtml(genre)}
+        </button>
+      `).join("")}
+    </section>
+  `;
+}
+
+function syncGenreChips() {
+  for (const chip of document.querySelectorAll(".chip[data-genre]")) {
+    const on = chip.dataset.genre === state.genre;
+    chip.classList.toggle("is-active", on);
+    chip.setAttribute("aria-pressed", String(on));
+  }
+}
+
+function gridMarkup(list) {
+  return list.length ? `<section class="game-grid">${list.map(gameCard).join("")}</section>` : emptyState();
+}
+
 function filteredGames() {
   const query = state.query.trim().toLowerCase();
-  let list = games.filter((game) => {
-    const creator = creators[game.creator].name;
-    const editorNames = game.editors.map((id) => creators[id].name).join(" ");
-    const haystack = `${game.name} ${game.genre} ${game.tagline} ${game.description} ${creator} ${editorNames} ${game.status} ${game.url} ${game.sourceUrl}`.toLowerCase();
-    return (state.genre === "All" || game.genre === state.genre) && (!query || haystack.includes(query));
+  const list = games.filter((game) => {
+    if (state.genre !== "All" && game.genre !== state.genre) return false;
+    if (!query) return true;
+    return searchText(game).includes(query);
   });
-
-  if (state.sort === "newest") list = [...list].sort((a, b) => b.year.localeCompare(a.year) || byGameName(a, b));
-  if (state.sort === "az") list = [...list].sort(byGameName);
-  if (state.sort === "creator") list = [...list].sort((a, b) => creators[a.creator].name.localeCompare(creators[b.creator].name) || a.name.localeCompare(b.name));
-  if (state.sort === "status") list = [...list].sort((a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b));
-  return list;
+  return [...list].sort(sorters[state.sort] ?? sorters.az);
 }
+
+function searchText(game) {
+  const people = [game.creator, ...game.editors].map((id) => creators[id]?.name ?? "").join(" ");
+  return `${game.name} ${game.genre} ${game.tagline} ${game.description} ${people} ${game.status} ${game.url} ${game.sourceUrl}`.toLowerCase();
+}
+
+const sorters = {
+  az: byGameName,
+  newest: (a, b) => String(b.year ?? "").localeCompare(String(a.year ?? "")) || byGameName(a, b),
+  creator: (a, b) => (creators[a.creator]?.name ?? "").localeCompare(creators[b.creator]?.name ?? "") || byGameName(a, b),
+  status: (a, b) => Number(b.status === "Live") - Number(a.status === "Live") || byGameName(a, b)
+};
 
 function byGameName(a, b) {
   return a.name.localeCompare(b.name, undefined, { numeric: true });
 }
 
 function option(value, label) {
-  return `<option value="${value}" ${state.sort === value ? "selected" : ""}>Sort: ${label}</option>`;
+  return `<option value="${escapeAttr(value)}" ${state.sort === value ? "selected" : ""}>${escapeHtml(label)}</option>`;
 }
 
 function gameCard(game) {
   return `
-    <article class="game-card surface" style="--accent:${escapeAttr(game.accent)}">
+    <article class="game-card surface" style="--accent:${escapeAttr(safeColor(game.accent))}">
       ${game.status === "WIP" ? wipBadge() : ""}
       <a class="card-open" href="#/game/${escapeAttr(game.id)}" aria-label="Open ${escapeAttr(game.name)} details">
         ${thumb(game)}
@@ -363,133 +702,168 @@ function gameCard(game) {
         </div>
         <div class="card-actions">
           ${cardPlayLink(game)}
-          <a class="card-link" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener" aria-label="Open ${escapeAttr(game.name)} GitHub repository">GitHub</a>
+          ${externalLink("card-link", game.sourceUrl, "GitHub", game.name)}
         </div>
       </div>
     </article>
   `;
 }
 
-function gameDetail(game) {
-  const related = games.filter((candidate) => candidate.id !== game.id).sort(byGameName);
+function emptyState() {
+  const onlySearch = state.genre === "All" && state.query.trim() !== "";
+  const helper = onlySearch ? "Try a different search." : "Try a different search or clear the genre filter.";
+  const action = onlySearch ? "Clear search" : "Clear filters";
+  return `
+    <section class="empty-state surface">
+      <h2>Nothing here.</h2>
+      <p>${helper}</p>
+      <button class="button button-secondary" data-action="clear-filters">${action}</button>
+    </section>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Detail overlay
+// ---------------------------------------------------------------------------
+
+function detailOverlay(game) {
   const isWip = game.status === "WIP";
 
   return `
-    <main class="page detail-page">
-      <a class="back-link" href="#/">Back to games</a>
-      <section class="detail-hero">
-        <div class="detail-media" style="--accent:${escapeAttr(game.accent)}">
-          ${isWip ? wipBadge() : ""}
+    <div class="detail-overlay" role="presentation">
+      <div class="detail-scrim" data-action="close-detail" aria-hidden="true"></div>
+      <div
+        class="detail-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-title"
+        tabindex="-1"
+        style="${accentStyle(game.accent)}"
+      >
+        <button class="detail-close" data-action="close-detail" aria-label="Close details">
+          <span></span><span></span>
+        </button>
+
+        <div class="detail-media">
+          ${isWip ? wipBadge(true) : ""}
           ${thumb(game, true)}
         </div>
-        <div class="detail-copy">
-          <p class="eyebrow ${isWip ? "is-wip" : ""}">${gameEyebrow(game, isWip)}</p>
-          <h1>${escapeHtml(game.name)}.</h1>
-          <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
-          <div class="detail-actions">
-            ${playButton(game, isWip ? "Not ready" : `Play ${game.name}`)}
-            <a class="button button-secondary" href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener">GitHub</a>
-            <button class="button button-secondary" data-action="copy-link">Copy page link</button>
+
+        <div class="detail-body">
+          <div class="detail-header">
+            <p class="eyebrow ${isWip ? "is-wip" : "is-live"}">${isWip ? "Work in progress" : "Live"}</p>
+            <h1 class="detail-title" id="detail-title">${escapeHtml(game.name)}</h1>
+            <p class="detail-tagline">${escapeHtml(game.tagline)}</p>
+            <div class="detail-tags">
+              <span class="tag">${escapeHtml(game.genre)}</span>
+              <span class="tag">${escapeHtml(game.year)}</span>
+            </div>
+            <div class="detail-credits" role="group" aria-label="Built by">
+              ${creditPill(game.creator, "Creator")}
+              ${game.editors.map((id) => creditPill(id, "Editor")).join("")}
+            </div>
           </div>
-          <div class="kv-grid" aria-label="${escapeAttr(game.name)} metadata">
-            <div class="kv surface"><span>Genre</span><strong>${escapeHtml(game.genre)}</strong></div>
-            <div class="kv surface"><span>Year</span><strong>${escapeHtml(game.year)}</strong></div>
-            <div class="kv surface"><span>Status</span><strong>${escapeHtml(game.status)}</strong></div>
+
+          <div class="detail-scroll" role="region" aria-label="${escapeAttr(game.name)} description">
+            <p class="detail-desc">${escapeHtml(game.description)}</p>
+          </div>
+
+          <div class="detail-actions ${game.url ? "" : "is-duo"}">
+            ${game.url
+              ? `${playButton(game, "Play")}
+            ${externalLink("button button-secondary", game.sourceUrl, "GitHub", game.name)}`
+              : externalLink("button", game.sourceUrl, "Follow on GitHub", game.name)}
+            <button class="button button-secondary" data-action="copy-link">Copy link</button>
+            <span class="sr-only" data-detail-status aria-live="polite" aria-atomic="true"></span>
           </div>
         </div>
-      </section>
-
-      <section class="detail-section">
-        <h2>About</h2>
-        <p>${escapeHtml(game.description)}</p>
-        ${isWip ? `<p class="wip-note">Pancake is still being built. Check back soon or bug ${escapeHtml(creators[game.creator].name)} on Discord.</p>` : ""}
-      </section>
-
-      <section class="detail-section">
-        <h2>Links</h2>
-        <div class="link-list">
-          ${game.url ? `<a href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener"><strong>Play</strong><span>${escapeHtml(game.url)}</span></a>` : `<span><strong>Play</strong><span>Not live yet</span></span>`}
-          <a href="${escapeAttr(game.sourceUrl)}" target="_blank" rel="noreferrer noopener"><strong>GitHub</strong><span>${escapeHtml(game.sourceUrl)}</span></a>
-        </div>
-      </section>
-
-      <section class="detail-section">
-        <h2>Built by</h2>
-        <div class="credit-list">
-          ${creditCard(game.creator, "Creator")}
-          ${game.editors.map((id) => creditCard(id, "Editor")).join("")}
-        </div>
-      </section>
-
-      ${related.length ? `
-        <section class="related">
-          <h2>Other games</h2>
-          <div class="game-grid related-grid">${related.map(gameCard).join("")}</div>
-        </section>
-      ` : ""}
-    </main>
+      </div>
+    </div>
   `;
 }
+
+function creditPill(id, role) {
+  const person = creators[id];
+  if (!person) return "";
+  return `
+    <a class="credit-pill" href="${escapeAttr(safeUrl(person.githubUrl))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${person.name}, ${role} — opens GitHub in a new tab`)}">
+      <span class="person-dot" style="--person:${escapeAttr(safeColor(person.color))}" aria-hidden="true"></span>
+      <span class="credit-name">${escapeHtml(person.name)}</span>
+      <span class="credit-role">${escapeHtml(role)}</span>
+      <span class="credit-ext" aria-hidden="true">↗</span>
+    </a>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Creators page
+// ---------------------------------------------------------------------------
 
 function creatorsPage() {
   return `
-    <main class="page">
+    <main class="page" data-page="creators">
       <section class="library-head">
         <div>
           <h1>Builders.</h1>
-          <p>The four of us, and what we've shipped.</p>
+          <p>Us, and what we've shipped.</p>
         </div>
       </section>
       <section class="creator-grid">
-        ${sortedCreators().map(([id, creator]) => {
-          const created = games.filter((game) => game.creator === id);
-          const edited = games.filter((game) => game.editors.includes(id));
-          const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
-
-          return `
-            <article class="creator-card surface">
-              <div class="creator-head">
-                <span class="person-orb" style="--person:${escapeAttr(creator.color)}" aria-hidden="true"></span>
-                <div>
-                  <h2>${escapeHtml(creator.name)}</h2>
-                  <a class="creator-handle" href="${escapeAttr(creator.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(creator.handle)}</a>
-                </div>
-              </div>
-              <p>${escapeHtml(creator.bio)}</p>
-              <div class="creator-stats">
-                <span><strong>${created.length}</strong> created</span>
-                <span><strong>${edited.length}</strong> edited</span>
-              </div>
-              ${listed.length ? `
-                <div class="creator-games">
-                  ${listed.map((game) => `
-                    <a href="#/game/${escapeAttr(game.id)}">
-                      <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
-                      <small>${game.creator === id ? "Creator" : "Editor"}</small>
-                    </a>
-                  `).join("")}
-                </div>
-              ` : ""}
-            </article>
-          `;
-        }).join("")}
+        ${sortedCreators().map(([id, creator]) => creatorCard(id, creator)).join("")}
       </section>
     </main>
   `;
 }
+
+function creatorCard(id, creator) {
+  const created = games.filter((game) => game.creator === id);
+  const edited = games.filter((game) => game.editors.includes(id));
+  const listed = [...created, ...edited.filter((game) => !created.includes(game))].sort(byGameName);
+
+  return `
+    <article class="creator-card surface">
+      <div class="creator-head">
+        <span class="person-orb" style="--person:${escapeAttr(safeColor(creator.color))}" aria-hidden="true"></span>
+        <div>
+          <h2>${escapeHtml(creator.name)}</h2>
+          <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${creator.name} on GitHub (${creator.handle}) — opens in a new tab`)}">${escapeHtml(creator.handle)}</a>
+        </div>
+      </div>
+      <p>${escapeHtml(creator.bio)}</p>
+      <div class="creator-stats">
+        <span><strong>${created.length}</strong> created</span>
+        <span><strong>${edited.length}</strong> edited</span>
+      </div>
+      ${listed.length ? `
+        <div class="creator-games">
+          ${listed.map((game) => `
+            <a href="#/game/${escapeAttr(game.id)}">
+              <span>${escapeHtml(game.name)}${game.status === "WIP" ? `<small class="inline-wip">WIP</small>` : ""}</span>
+              <small>${game.creator === id ? "Creator" : "Editor"}</small>
+            </a>
+          `).join("")}
+        </div>
+      ` : ""}
+    </article>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Shared building blocks
+// ---------------------------------------------------------------------------
 
 function thumb(game, big = false) {
   const image = game.screenshot;
   return `
-    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="--accent:${escapeAttr(game.accent)}; --accent-dark:${escapeAttr(shade(game.accent, -70))}">
+    <div class="thumb ${big ? "big" : ""} ${game.status === "WIP" ? "is-wip" : ""}" style="${accentStyle(game.accent)}">
       ${image ? screenshotImage(game, image, big) : `<span class="thumb-pattern" aria-hidden="true"></span>`}
-      <span class="thumb-tag">${image ? "Live capture" : "[ thumbnail ]"}</span>
+      <span class="thumb-tag" aria-hidden="true">${image ? "Live capture" : "[ thumbnail ]"}</span>
     </div>
   `;
 }
 
 function screenshotImage(game, image, big) {
-  const sizes = big ? "(max-width: 840px) 100vw, 52vw" : "(max-width: 520px) 100vw, 360px";
+  const sizes = big ? "(max-width: 840px) 100vw, 720px" : "(max-width: 520px) 100vw, 360px";
   const priority = big ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
   return `
     <picture>
@@ -499,89 +873,110 @@ function screenshotImage(game, image, big) {
   `;
 }
 
-function gameEyebrow(game, isWip) {
-  if (isWip) return "Work in progress";
-  return `${escapeHtml(game.genre)} / ${escapeHtml(game.year)}`;
-}
-
 function playButton(game, label) {
   if (!game.url) return `<button class="button is-disabled" disabled>${escapeHtml(label)}</button>`;
-  return `<a class="button" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+  return `<a class="button" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`Play ${game.name} — opens in a new tab`)}">${escapeHtml(label)}</a>`;
 }
 
 function cardPlayLink(game) {
-  if (!game.url) return `<span class="card-link is-disabled">Not live</span>`;
-  return `<a class="card-link is-primary" href="${escapeAttr(game.url)}" target="_blank" rel="noreferrer noopener" aria-label="Play ${escapeAttr(game.name)}">Play</a>`;
+  if (!game.url) return `<button class="card-link is-disabled" disabled>Not live</button>`;
+  return `<a class="card-link is-primary" href="${escapeAttr(safeUrl(game.url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`Play ${game.name} — opens in a new tab`)}">Play</a>`;
+}
+
+function externalLink(classes, url, label, name) {
+  return `<a class="${classes}" href="${escapeAttr(safeUrl(url))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${label}${name ? ` ${name}` : ""} — opens in a new tab`)}">${escapeHtml(label)}</a>`;
 }
 
 function personPill(id, editorCount = 0) {
   const person = creators[id];
+  if (!person) return "";
   return `
     <span class="person-pill">
-      <span class="person-dot" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
+      <span class="person-dot" style="--person:${escapeAttr(safeColor(person.color))}" aria-hidden="true"></span>
       ${escapeHtml(person.name)}${editorCount ? ` <small>+${editorCount}</small>` : ""}
     </span>
   `;
 }
 
-function creditCard(id, role) {
-  const person = creators[id];
-  return `
-    <article class="credit-card surface">
-      <span class="person-orb" style="--person:${escapeAttr(person.color)}" aria-hidden="true"></span>
-      <div>
-        <h3>${escapeHtml(person.name)}</h3>
-        <p>${escapeHtml(role)} / <a class="inline-handle" href="${escapeAttr(person.githubUrl)}" target="_blank" rel="noreferrer noopener">${escapeHtml(person.handle)}</a></p>
-      </div>
-    </article>
-  `;
-}
-
-function wipBadge() {
-  return `<span class="wip-badge"><span></span>WIP</span>`;
-}
-
-function emptyState() {
-  return `
-    <section class="empty-state surface">
-      <h2>Nothing here.</h2>
-      <p>Try a different search or clear the filters.</p>
-    </section>
-  `;
+function wipBadge(decorative = false) {
+  // On the card the badge is the only status cue, so it announces itself; in the
+  // detail overlay the eyebrow already says "Work in progress", so hide it.
+  return decorative
+    ? `<span class="wip-badge" aria-hidden="true"><span></span>WIP</span>`
+    : `<span class="wip-badge" role="img" aria-label="Work in progress"><span></span>WIP</span>`;
 }
 
 async function copyCurrentLink(button) {
-  const text = location.href;
-  try {
-    await navigator.clipboard.writeText(text);
-    button.textContent = "Copied";
-    window.setTimeout(() => {
-      button.textContent = "Copy page link";
+  const announce = (message) => {
+    const status = button.closest(".detail-panel")?.querySelector("[data-detail-status]");
+    if (status) status.textContent = message;
+  };
+  const reset = () => {
+    window.clearTimeout(copyResetTimer);
+    copyResetTimer = window.setTimeout(() => {
+      button.textContent = "Copy link";
+      button.classList.remove("is-copied");
     }, 1200);
+  };
+  const succeed = () => {
+    button.textContent = "Copied";
+    button.classList.add("is-copied");
+    announce("Link copied");
+    reset();
+  };
+
+  try {
+    await navigator.clipboard.writeText(location.href);
+    succeed();
   } catch {
-    button.textContent = "Copy failed";
+    if (legacyCopy(location.href)) {
+      succeed();
+    } else {
+      button.textContent = "Copy failed";
+      announce("Copy failed");
+      reset();
+    }
   }
 }
 
-function footer() {
-  return `
-    <footer class="footer">
-      <span>FIRST_OR_EIGHTH</span>
-      <span class="footer-creators">
-        ${sortedCreators().map(([, creator]) => `
-          <span class="footer-person"><span class="person-dot" style="--person:${escapeAttr(creator.color)}"></span>${escapeHtml(creator.name)}</span>
-        `).join("")}
-      </span>
-      <span>No ads / no tracking / no coins</span>
-    </footer>
+// Fallback for non-secure origins / older browsers where the async Clipboard
+// API is unavailable.
+function legacyCopy(text) {
+  try {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const ok = document.execCommand("copy");
+    field.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function renderFatal(error) {
+  app.innerHTML = `
+    <main class="page">
+      <section class="empty-state surface">
+        <h2>Couldn't load the games.</h2>
+        <p>${escapeHtml(error.message)}</p>
+      </section>
+    </main>
   `;
 }
 
-function restoreSearchFocus() {
-  const input = document.querySelector("[data-search]");
-  if (!input) return;
-  input.focus();
-  input.setSelectionRange(state.query.length, state.query.length);
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+function routeId() {
+  // On a game route, highlight the nav entry for the page the overlay sits over.
+  if (state.route.name === "game") return mountedPage === "creators" ? "creators" : "home";
+  return state.route.name;
 }
 
 function sortedCreators() {
@@ -593,8 +988,7 @@ function onlineCount() {
 }
 
 function shade(hex, amount) {
-  const value = hex.replace("#", "");
-  const number = Number.parseInt(value, 16);
+  const number = Number.parseInt(hex.replace("#", ""), 16);
   const red = clamp((number >> 16) + amount);
   const green = clamp(((number >> 8) & 255) + amount);
   const blue = clamp((number & 255) + amount);
@@ -603,6 +997,23 @@ function shade(hex, amount) {
 
 function clamp(value) {
   return Math.max(0, Math.min(255, value));
+}
+
+// Only ever emit https:// links into href attributes, so a bad/hostile value
+// in the data can never become a javascript:/data: URL.
+function safeUrl(value) {
+  return /^https:\/\//i.test(value) ? value : "#";
+}
+
+// Only ever emit a literal hex color into inline style, so a bad value can
+// never inject CSS (and shade() never receives NaN-producing input).
+function safeColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : "#888888";
+}
+
+function accentStyle(accent) {
+  const color = safeColor(accent);
+  return `--accent:${escapeAttr(color)}; --accent-dark:${escapeAttr(shade(color, -70))}`;
 }
 
 function escapeAttr(value) {
