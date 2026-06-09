@@ -172,6 +172,25 @@
     Web Audio API. Pure play money — no accounts, no payments, no real
     wagering.
 
+- id: feltline-poker
+  name: Feltline Poker
+  status: Live
+  url: https://poker-pearl-three.vercel.app/
+  source: https://github.com/mchen04/poker
+  creator: michael
+  editors: []
+  genre: Card
+  year: 2026
+  accent: "#c9a54a"
+  tagline: Private play-money poker for friends.
+  description: >
+    Feltline Poker is a browser-based private home poker game for friends.
+    Players host or join rooms with six-letter codes, sit at a shared table,
+    and play server-authoritative no-limit Hold'em with blinds, side pots,
+    showdown, chip controls, host moderation, bots, and exportable session
+    ledgers. It is play-money only — no accounts, payments, rake, deposits,
+    withdrawals, or real-money settlement.
+
 - id: pancake
   name: Pancake
   status: WIP
