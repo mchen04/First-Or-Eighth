@@ -355,8 +355,8 @@
 }
 
 .card-link.is-primary {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--play);
+  background: var(--play);
   color: #0a0b14;
 }
 

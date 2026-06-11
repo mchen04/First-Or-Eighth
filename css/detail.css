@@ -258,11 +258,11 @@
   align-items: center;
   justify-content: center;
   min-height: 46px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--play);
   border-radius: 6px;
-  background: var(--accent);
+  background: var(--play);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--play) 28%, transparent);
   color: #0a0b14;
   cursor: pointer;
   font-family: var(--mono);
