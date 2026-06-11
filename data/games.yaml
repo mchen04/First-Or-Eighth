@@ -191,6 +191,23 @@
     ledgers. It is play-money only — no accounts, payments, rake, deposits,
     withdrawals, or real-money settlement.
 
+- id: splitwisest
+  name: SplitWisest
+  status: Live
+  url: https://splitwisest-kappa.vercel.app/
+  source: https://github.com/mchen04/SplitWisest
+  creator: michael
+  editors: [matthew]
+  genre: Utility
+  year: 2026
+  accent: "#1b6e5a"
+  tagline: Split shared expenses and see who owes who.
+  description: >
+    SplitWisest is a shared-expense tracker for friends and groups. Create an
+    account, connect with friends or join a group by invite code, log who paid
+    for what, and let it settle balances so everyone can see who owes who at a
+    glance.
+
 - id: pancake
   name: Pancake
   status: WIP
