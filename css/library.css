@@ -296,9 +296,12 @@
 
 .card-tagline {
   margin: 0;
+  overflow: hidden;
   color: var(--text-mute);
   font-size: 13px;
   line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .card-foot {
