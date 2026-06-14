@@ -79,6 +79,23 @@
     Classic attribute feedback, Quote, Ability, Emoji, and Splash rounds, with
     champion search, stats, settings, and replayable randomized puzzles.
 
+- id: codenames
+  name: CodeNames
+  status: Live
+  url: https://codenames-rho-smoky.vercel.app/
+  source: https://github.com/mchen04/CodeNames
+  creator: michael
+  editors: []
+  genre: Arcade
+  year: 2026
+  accent: "#6f5cff"
+  tagline: Spin up a realtime spy-word room and share the link.
+  description: >
+    CodeNames is a clean, realtime word-association party game. Create an
+    accountless room, invite friends with a link, coordinate with built-in
+    chat, and play through configurable game modes backed by curated word
+    packs and reconnect-safe multiplayer.
+
 - id: twenty-five
   name: 25 Words or Less
   status: Live
