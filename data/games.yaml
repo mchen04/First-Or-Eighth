@@ -81,7 +81,7 @@
 
 - id: codenames
   name: CodeNames
-  status: Live
+  status: WIP
   url: https://codenames-rho-smoky.vercel.app/
   source: https://github.com/mchen04/CodeNames
   creator: michael
