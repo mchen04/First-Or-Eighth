@@ -46,6 +46,24 @@
     live/upcoming/final states, and opens a watch panel with stream options
     and game context.
 
+- id: better-82-0
+  name: Better 82-0 Multiplayer
+  status: Live
+  url: https://82-0-orpin.vercel.app/
+  source: https://github.com/mchen04/82-0
+  creator: michael
+  editors: []
+  genre: Sports
+  year: 2026
+  accent: "#ef5a29"
+  tagline: Draft a five-player lineup and race friends to 82 wins.
+  description: >
+    Better 82-0 Multiplayer turns Cap Mode into a private, accountless game
+    night. Friends can build independent lineups in Parallel Cap Race or take
+    turns from one board in Shared Snake Draft, with hard and soft salary caps,
+    live standings, reconnect-safe lobbies, and server-authoritative spins,
+    picks, scoring, winners, and tiebreakers.
+
 - id: ding
   name: Ding
   status: Live
@@ -223,6 +241,25 @@
     account, connect with friends or join a group by invite code, log who paid
     for what, and let it settle balances so everyone can see who owes who at a
     glance.
+
+- id: chapterline
+  name: Chapterline
+  status: Live
+  url: https://audiobook-pwa-plum.vercel.app/
+  source: https://github.com/mchen04/audiobook_pwa
+  creator: michael
+  editors: []
+  genre: Utility
+  year: 2026
+  accent: "#6f8dff"
+  tagline: Keep chaptered audiobooks private, offline, and in sync.
+  description: >
+    Chapterline is a private, installable audiobook player built for the
+    chaptered MP3s created by the companion Epub Listener converter. Audio is
+    parsed and stored on-device instead of uploaded, while chapters, progress,
+    bookmarks, collections, and library metadata stay in sync. Playback works
+    offline with speed controls, skip intervals, sleep timers, and lock-screen
+    controls.
 
 - id: pancake
   name: Pancake
