@@ -4,7 +4,7 @@ First or Eighth is a responsive game hub for the current friend-group games:
 
 - Ding: live at <https://ding-game.vercel.app/> / source at <https://github.com/jormyy/ding>
 - Better 82-0 Multiplayer: live at <https://82-0-orpin.vercel.app/> / source at <https://github.com/mchen04/82-0>
-- Chapterline: live at <https://audiobook-pwa-plum.vercel.app/> / source at <https://github.com/mchen04/audiobook_pwa> / companion converter at <https://github.com/mchen04/Epub_Listener>
+- Hark: live at <https://audiobook-pwa-plum.vercel.app/> / source at <https://github.com/mchen04/audiobook_pwa> / companion converter at <https://github.com/mchen04/Epub_Listener>
 - CodeNames: work in progress at <https://codenames-rho-smoky.vercel.app/> / source at <https://github.com/mchen04/CodeNames>
 - Felt: live at <https://pokernow.vercel.app/> / source at <https://github.com/mchen04/pokernow>
 - LoLdle: live at <https://loldle-app.vercel.app/> / source at <https://github.com/mchen04/LoLdle>
@@ -74,7 +74,7 @@ npm run check
 
 - Jeremy created Ding, Valence, Heardle, and Pancake.
 - Matthew created 25 Words or Less.
-- Michael created Better 82-0 Multiplayer, Chapterline, CodeNames, Felt, LoLdle, King's Cup, Pour Decisions, SplitWisest, and Neon Royale, and edited the other current games and the hub presentation.
+- Michael created Better 82-0 Multiplayer, Hark, CodeNames, Felt, LoLdle, King's Cup, Pour Decisions, SplitWisest, and Neon Royale, and edited the other current games and the hub presentation.
 - Justin edited King's Cup.
 
 ## Design Notes

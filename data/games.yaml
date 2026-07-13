@@ -242,8 +242,8 @@
     for what, and let it settle balances so everyone can see who owes who at a
     glance.
 
-- id: chapterline
-  name: Chapterline
+- id: hark
+  name: Hark
   status: Live
   url: https://audiobook-pwa-plum.vercel.app/
   source: https://github.com/mchen04/audiobook_pwa
@@ -252,14 +252,14 @@
   genre: Utility
   year: 2026
   accent: "#6f8dff"
-  tagline: Keep chaptered audiobooks private, offline, and in sync.
+  tagline: Your audiobooks, kept simple.
   description: >
-    Chapterline is a private, installable audiobook player built for the
-    chaptered MP3s created by the companion Epub Listener converter. Audio is
-    parsed and stored on-device instead of uploaded, while chapters, progress,
-    bookmarks, collections, and library metadata stay in sync. Playback works
-    offline with speed controls, skip intervals, sleep timers, and lock-screen
-    controls.
+    Hark is a private, installable audiobook player built for the chaptered
+    MP3s created by the companion Epub Listener converter. Audio is parsed and
+    stored on-device instead of uploaded, while chapters, progress, bookmarks,
+    collections, and library metadata stay in sync across devices. Playback
+    works offline with speed controls, skip intervals, sleep timers, and
+    lock-screen controls.
 
 - id: pancake
   name: Pancake
