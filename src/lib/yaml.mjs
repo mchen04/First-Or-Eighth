@@ -8,7 +8,7 @@
 // It is intentionally not a full YAML 1.2 implementation, but it follows YAML's
 // rules where it matters:
 //   * A "#" that begins a line is a comment; a "#" after a space in a plain
-//     value is rejected (a literal "#" must be quoted, e.g. bio: "Autist #3.").
+//     value is rejected (a literal "#" must be quoted, e.g. color: "#ff3d7f").
 //     Trailing comments are allowed after quoted/flow/block-header values.
 //   * A mapping line that is not "key: value" (e.g. a missing space after the
 //     colon), or a line indented out of alignment, throws a clear error instead
@@ -212,7 +212,7 @@ function parseScalar(value, lineNo, inFlow = false) {
   // Plain scalar: a "#" that starts the value is a whole-line comment (null
   // value). A "#" after a space would start an inline comment and silently
   // truncate the value, so we reject it loudly — a literal "#" must be quoted
-  // (e.g. bio: "Autist #3."). Inside a flow collection there is no inline
+  // (e.g. color: "#ff3d7f"). Inside a flow collection there is no inline
   // comment, so "#" is literal there. Trailing comments are still allowed after
   // quoted values, flow collections, and block-scalar headers.
   if (!inFlow) {

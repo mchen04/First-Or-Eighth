@@ -829,7 +829,7 @@ function creatorCard(id, creator) {
           <a class="creator-handle" href="${escapeAttr(safeUrl(creator.githubUrl))}" target="_blank" rel="noreferrer noopener" aria-label="${escapeAttr(`${creator.name} on GitHub (${creator.handle}) — opens in a new tab`)}">${escapeHtml(creator.handle)}</a>
         </div>
       </div>
-      <p>${escapeHtml(creator.bio)}</p>
+      ${creator.bio ? `<p>${escapeHtml(creator.bio)}</p>` : ""}
       <div class="creator-stats">
         <span><strong>${created.length}</strong> created</span>
         <span><strong>${edited.length}</strong> edited</span>
