@@ -50,7 +50,7 @@
   name: Better 82-0 Multiplayer
   status: Live
   url: https://82-0-orpin.vercel.app/
-  source: https://github.com/mchen04/82-0
+  source: https://github.com/mchen04/better-82-0-multiplayer
   creator: michael
   editors: []
   genre: Sports
@@ -85,7 +85,7 @@
   name: LoLdle
   status: Live
   url: https://loldle-app.vercel.app/
-  source: https://github.com/mchen04/LoLdle
+  source: https://github.com/mchen04/loldle
   creator: michael
   editors: []
   genre: Arcade
@@ -101,7 +101,7 @@
   name: CodeNames
   status: WIP
   url: https://codenames-rho-smoky.vercel.app/
-  source: https://github.com/mchen04/CodeNames
+  source: https://github.com/mchen04/codenames
   creator: michael
   editors: []
   genre: Arcade
@@ -152,7 +152,7 @@
   name: King's Cup
   status: Live
   url: https://kings-cup-liard.vercel.app/
-  source: https://github.com/mchen04/Kings_Cup
+  source: https://github.com/mchen04/kings-cup
   creator: michael
   editors: [justin]
   genre: Arcade
@@ -171,7 +171,7 @@
   name: Pour Decisions
   status: Live
   url: https://drinking-games-eosin.vercel.app/
-  source: https://github.com/mchen04/Drinking_Games
+  source: https://github.com/mchen04/drinking-games
   creator: michael
   editors: []
   genre: Arcade
@@ -191,7 +191,7 @@
   name: Neon Royale
   status: Live
   url: https://casino-topaz-gamma.vercel.app/
-  source: https://github.com/mchen04/Casino
+  source: https://github.com/mchen04/neon-royale-casino
   creator: michael
   editors: [jeremy]
   genre: Arcade
@@ -211,7 +211,7 @@
   name: Felt
   status: Live
   url: https://pokernow.vercel.app/
-  source: https://github.com/mchen04/pokernow
+  source: https://github.com/mchen04/felt-poker
   creator: michael
   editors: []
   genre: Card
@@ -229,7 +229,7 @@
   name: SplitWisest
   status: Live
   url: https://splitwisest-kappa.vercel.app/
-  source: https://github.com/mchen04/SplitWisest
+  source: https://github.com/mchen04/splitwisest
   creator: michael
   editors: [matthew]
   genre: Utility
@@ -246,7 +246,7 @@
   name: Hark
   status: Live
   url: https://audiobook-pwa-plum.vercel.app/
-  source: https://github.com/mchen04/audiobook_pwa
+  source: https://github.com/mchen04/hark-audiobook
   creator: michael
   editors: []
   genre: Utility

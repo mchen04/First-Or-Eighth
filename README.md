@@ -3,18 +3,18 @@
 First or Eighth is a responsive game hub for the current friend-group games:
 
 - Ding: live at <https://ding-game.vercel.app/> / source at <https://github.com/jormyy/ding>
-- Better 82-0 Multiplayer: live at <https://82-0-orpin.vercel.app/> / source at <https://github.com/mchen04/82-0>
-- Hark: live at <https://audiobook-pwa-plum.vercel.app/> / source at <https://github.com/mchen04/audiobook_pwa> / companion converter at <https://github.com/mchen04/Epub_Listener>
-- CodeNames: work in progress at <https://codenames-rho-smoky.vercel.app/> / source at <https://github.com/mchen04/CodeNames>
-- Felt: live at <https://pokernow.vercel.app/> / source at <https://github.com/mchen04/pokernow>
-- LoLdle: live at <https://loldle-app.vercel.app/> / source at <https://github.com/mchen04/LoLdle>
-- SplitWisest: live at <https://splitwisest-kappa.vercel.app/> / source at <https://github.com/mchen04/SplitWisest>
+- Better 82-0 Multiplayer: live at <https://82-0-orpin.vercel.app/> / source at <https://github.com/mchen04/better-82-0-multiplayer>
+- Hark: live at <https://audiobook-pwa-plum.vercel.app/> / source at <https://github.com/mchen04/hark-audiobook> / companion converter at <https://github.com/mchen04/epub-listener>
+- CodeNames: work in progress at <https://codenames-rho-smoky.vercel.app/> / source at <https://github.com/mchen04/codenames>
+- Felt: live at <https://pokernow.vercel.app/> / source at <https://github.com/mchen04/felt-poker>
+- LoLdle: live at <https://loldle-app.vercel.app/> / source at <https://github.com/mchen04/loldle>
+- SplitWisest: live at <https://splitwisest-kappa.vercel.app/> / source at <https://github.com/mchen04/splitwisest>
 - Valence: live at <https://valence1.vercel.app/> / source at <https://github.com/jormyy/valence>
 - 25 Words or Less: live at <https://25-words-or-less.vercel.app/> / source at <https://github.com/matthewh8/25-words-or-less>
 - Heardle: live at <https://heardle67.vercel.app> / source at <https://github.com/jormyy/heardle>
-- King's Cup: live at <https://kings-cup-liard.vercel.app/> / source at <https://github.com/mchen04/Kings_Cup>
-- Pour Decisions: live at <https://drinking-games-eosin.vercel.app/> / source at <https://github.com/mchen04/Drinking_Games>
-- Neon Royale: live at <https://casino-topaz-gamma.vercel.app/> / source at <https://github.com/mchen04/Casino>
+- King's Cup: live at <https://kings-cup-liard.vercel.app/> / source at <https://github.com/mchen04/kings-cup>
+- Pour Decisions: live at <https://drinking-games-eosin.vercel.app/> / source at <https://github.com/mchen04/drinking-games>
+- Neon Royale: live at <https://casino-topaz-gamma.vercel.app/> / source at <https://github.com/mchen04/neon-royale-casino>
 - Pancake: work in progress / source at <https://github.com/jormyy/pancake>
 
 The visual direction is a neon dark game shelf with equal-weight cards, a mobile
